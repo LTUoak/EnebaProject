@@ -211,3 +211,248 @@ I kept `.neon`, the small file that links this folder to your Neon project (it h
 **Commit:** "Ignore env files and Neon link file, update chat log", pushed to `origin/master`.
 
 ---
+
+## User
+
+This project's scope is up to me and I will have to justify it, but I am not sure how to document it properly. Suggest a simple way to do so
+
+## Assistant
+
+Keep one short file, `SCOPE.md`, in the repo root, and write every scope choice as a decision with its reason. Justifying scope mostly means showing that each cut or inclusion was deliberate, so the reason column is the part that matters.
+
+Three sections are enough:
+
+```markdown
+# Project Scope
+
+## Goal
+One or two sentences: what the app does and who it is for.
+
+## In scope
+| Feature | Why it is included |
+|---|---|
+| Example: product search | Core of the task; nothing else works without it |
+
+## Out of scope
+| Feature | Why it is left out | What I'd do with more time |
+|---|---|---|
+| Example: user accounts | Not needed to show the core flow; adds auth work | Add login with sessions |
+
+## Decisions log
+- 2026-11-10: Chose PHP + Neon Postgres + React, because ...
+- 2026-11-10: Deploying backend on Render, because Vercel has no official PHP support.
+```
+
+How to keep it useful:
+
+- **Write the reason when you make the choice.** One line at the moment of deciding is easier and more convincing than reconstructing it at the end.
+- **Fill the "out of scope" table as carefully as the "in scope" one.** It shows you saw the feature and chose to skip it, instead of missing it.
+- **Tie reasons to something concrete:** the task requirements, the time you have, or a technical limit (such as the free-tier limits on Render).
+- **Link it from the README** so a reviewer finds it immediately.
+
+The chat log already backs this up, since it records when and why choices were made, and the first two decisions-log lines above come straight from it.
+
+I haven't created the file. Tell me the project's goal and the features you're planning, and I'll draft `SCOPE.md` with them filled in.
+
+---
+
+## User
+
+The end goal will be to implement a marketplace web application in Eneba's style that matches eneba.com. Your idea of a SCOPE.md is good and I want you to create it in the repo root with three sections: what we build (in scope), what we deliberately skip (out of scope), and a short decisions log. Every choice needs a one-line reason, tied to the assignment, our time or a technical limit.
+
+Context for the scope: I work alone, I have about one week (and university classes at the same time), and the assignment prefers a few features done well over many shallow ones. Required features: store with filters/sorting/search, homepage built from separate blocks that each get data from their own backend endpoint, search that tolerates typos, product page with offers from several sellers, cart and simulated checkout that delivers a digital key, sign-up/sign-in with protected pages (checkout, order history), and Eneba styling. Stack: React + TypeScript, PHP backend, PostgreSQL on Neon, deployed on Render and Vercel free tiers.
+
+As I've learned, Neon uses Postgres, so use PostgreSQL on Neon. Next we need the database, so design it as numbered SQL migrations in database/migrations. Tables: users, products, offers, game keys, orders. Model Eneba's core ideas (several sellers offering the same product at different prices, region and platform, and a digital key delivered after payment), but keep it minimal. If you think order items are needed to link orders to offers and keys, add them and tell me why; don't add any other tables without asking. Also tell me how sellers are represented without a separate table, and whether the cart should live in the database or in the browser. Add a migration that enables the pg_trgm extension for typo-tolerant search. Use sensible types (for example prices as integer cents).
+
+Explain every table and its main columns simply, and why it is designed that way (for example why prices live in offers and not in products), because I need to be able to explain it to someone else.
+
+Do not run the migrations yet and do not implement the API.
+
+## Assistant
+
+(Progress note mid-turn) The seven migration files are written; fixing one foreign-key detail, then writing `SCOPE.md` and the explanation.
+
+`SCOPE.md` is in the repo root and the schema is written as seven numbered migrations in `database/migrations`. Nothing was run against Neon, so the SQL has not been executed or tested yet, and no API code was written.
+
+**Your three questions**
+
+- **Order items: yes, I added the table.** An order can contain several different offers, so something has to sit between `orders` and `offers`. It also freezes the price paid, because a seller can change an offer's price later, and it is what each sold key points to.
+- **Sellers: a seller is a row in `users` with `is_seller = true`.** An offer's `seller_id` points to that user, and the user's `display_name` is the seller name shown on the product page. Sellers come from seed data, since a seller dashboard is out of scope.
+- **Cart: keep it in the browser (localStorage).** Guests can fill a cart before signing in, and it needs no table or endpoints. At checkout the browser sends offer IDs and quantities, and the server looks up prices and stock itself, so nothing the browser claims about prices is trusted.
+
+**The migrations**
+
+| File | Creates |
+|---|---|
+| `001_enable_pg_trgm.sql` | the `pg_trgm` extension |
+| `002_create_users.sql` | `users` |
+| `003_create_products.sql` | `products` |
+| `004_create_offers.sql` | `offers` |
+| `005_create_orders.sql` | `orders` |
+| `006_create_order_items.sql` | `order_items` |
+| `007_create_game_keys.sql` | `game_keys` |
+
+The order matters: each table only references tables created before it.
+
+**How the tables fit together**
+
+A product has many offers, each from one seller. Each offer has many keys in stock. A buyer's order has one or more order items, each pointing at an offer, and the keys the buyer receives point back at their order item.
+
+**users** — everyone with an account, buyers and sellers alike.
+
+- `email`: unique regardless of letter case, so `A@x.com` and `a@x.com` are the same account.
+- `password_hash`: the hashed password from PHP's `password_hash()`; the real password is never stored.
+- `display_name`: shown as the seller name on offers.
+- `is_seller`: marks which users may own offers.
+
+**products** — one row per thing you can buy a key for, such as "Split Fiction (PC) Steam Key GLOBAL".
+
+- `slug`: the readable URL part for the product page.
+- `title`, `description`, `cover_image_url`, `release_date`: what the store card and product page display.
+- `platform` and `region`: where the key is activated and where it works. They belong to the product because a Steam GLOBAL key and an Xbox EUROPE key are different goods, even for the same game; every seller of one product sells the same thing.
+- No price column. A product has no single price, only the prices sellers ask.
+- The title has a trigram index, which is what makes typo-tolerant search fast.
+
+**offers** — "seller X sells product Y for price Z".
+
+- `product_id`, `seller_id`: which product, and which user is selling it.
+- `price_cents`: the price in euro cents (1999 = €19.99). This is why prices live here: several sellers offer the same product at different prices, and the store shows the cheapest as "from €X".
+- Integer cents avoid the rounding errors that decimal fractions cause in floating-point numbers.
+- `is_active`: hides an offer without deleting it, since past orders still point to it.
+- A seller can have only one offer per product; they change its price instead of adding a second one.
+- No stock column. Stock is the number of unsold keys for the offer, so it cannot drift from reality.
+
+**orders** — one row per checkout.
+
+- `user_id`: the buyer; this is what the order history page filters on.
+- `status`: `pending`, `paid` or `failed`. Payment is simulated, but the status models the rule that keys are delivered only after payment.
+- `total_cents`: the order total, fixed at checkout.
+- `paid_at`: set exactly when the order becomes paid; the database enforces that.
+
+**order_items** — one row per offer inside an order.
+
+- `order_id`, `offer_id`: which order, and which seller's offer was bought.
+- `quantity`: how many copies.
+- `unit_price_cents`: the offer's price copied at the moment of purchase, so order history keeps showing what was actually paid.
+
+**game_keys** — one row per digital key a seller has put in stock.
+
+- `offer_id`: whose stock the key belongs to.
+- `key_code`: the key itself, unique. These will be fake keys from seed data.
+- `order_item_id`: empty while the key is unsold; set to the buyer's order item when it is sold. An order item with quantity 2 has two keys pointing at it.
+- `sold_at`: set exactly when the key is assigned.
+- Delivering a key is therefore one step at checkout: pick an unsold key for the offer and stamp it with the order item.
+
+**Things to check in `SCOPE.md`**
+
+- I gave "Assignment stack" as the reason for React + TypeScript and PHP, since you listed them as the stack. If the stack was your own choice, those two reasons need your real ones.
+- The out-of-scope list is my proposal based on your constraints: real payments, seller dashboard, admin panel, emails, social sign-in, server-side cart, multiple currencies and languages, reviews and similar extras, external game data, refunds, and Eneba pages outside the purchase flow. Remove anything you do intend to build.
+- I assumed a single currency (EUR) throughout; the schema has no currency column.
+
+Two columns I left out to keep the schema minimal, each a one-line migration to add later: a product genre for an extra store filter, and a list price for showing discount badges.
+
+The new files are not committed, since you didn't ask for a commit this turn.
+
+---
+
+## User
+
+The reason I chose PHP is because my project assignment allowed it and it seemed more documented. 
+
+Before we run the migrations: the assignment says the homepage is built from several blocks, each getting its content from its own backend service or database. Which tables or endpoints will feed the banner, best sellers and deals blocks? If the current schema cannot support them, propose the smallest change (for example a banners table, or an old_price_cents column on offers) and explain it simply. Update SCOPE.md and the migrations accordingly. Don't run the migrations yet.
+
+## Assistant
+
+The schema could feed best sellers as it was, but not the banner or deals blocks, so I made two small changes: a new `banners` table and an `old_price_cents` column on offers. Nothing was run against Neon and no endpoints were implemented.
+
+| Block | Planned endpoint | Fed by | Schema change |
+|---|---|---|---|
+| Banner | `GET /api/home/banners` | `banners` | new table (`008_create_banners.sql`) |
+| Best sellers | `GET /api/home/best-sellers` | `order_items` + `orders` + `offers` + `products` | none |
+| Deals | `GET /api/home/deals` | `offers` + `products` | new column `old_price_cents` (in `004_create_offers.sql`) |
+
+Each block has its own endpoint and its own query, so one block failing or loading slowly does not affect the others. The endpoint paths are my proposal; they are not built yet.
+
+**Banner: new `banners` table**
+
+No existing table holds promo content, and hard-coding it in React would break the rule that each block gets its content from the backend.
+
+- `title`, `subtitle`, `image_url`: what the banner shows.
+- `link_url`: where a click leads, such as a product page or a filtered store page.
+- `sort_order`: which banner comes first.
+- `is_active`: turns a banner off without deleting it.
+
+**Best sellers: no change**
+
+The ranking is the number of copies sold per product: add up `quantity` in `order_items` for orders with status `paid`, grouped by the product behind each offer. On a fresh database there are no orders, so the block would be empty; the seed data needs a few past paid orders to give it something to rank.
+
+**Deals: `old_price_cents` on offers**
+
+A deal is an offer whose price was lowered, and the schema had no record of the price before the discount.
+
+- Empty means the offer is not on sale; filled means "was this, now `price_cents`".
+- The database rejects an old price that is not higher than the current price.
+- The deals block lists offers where it is filled, biggest percentage discount first. The same column gives you the crossed-out price and "-35%" badge on store cards.
+- It sits on offers, not products, for the same reason the price does: each seller sets their own discount.
+
+Because no migration has been run yet, I added the column directly to `004_create_offers.sql` instead of writing a separate "alter table" migration. Once the migrations have run, any further change has to be a new numbered file.
+
+**`SCOPE.md` updates**
+
+- The PHP reason now reads: allowed by the assignment and well documented, which saves time when working alone.
+- The homepage row names the three blocks.
+- The seed data row now includes banners and a few past orders.
+- Three new decisions-log lines cover the banners table, `old_price_cents`, and ranking best sellers from orders.
+
+The chat log is updated. Nothing is committed, since you haven't asked for a commit since the last push.
+
+---
+
+## User
+
+Now run the 8 migrations against my database using DATABASE_URL_UNPPOLED from the backend .env (remember to never print it). Add a small PHP runner script tht records which migrations already ran, so each one runs only once and rerunning is safe. After doing that, confirm that all the tables the pg_trgm extension exist and show me a list of the tables.
+
+After that commit everything, not forgetting the chat-log.md and push to master.
+
+## Assistant
+
+All 8 migrations ran against your Neon database, the tables and the `pg_trgm` extension exist, and everything is committed and pushed to `master`. The connection string was never printed or logged.
+
+**Runner:** `database/migrate.php`, run with `php database/migrate.php` from the repo root.
+
+- It reads `DATABASE_URL_UNPOOLED` from `backend/.env` (the variable in the file is spelled that way; your message had a typo).
+- It records each applied file in a `schema_migrations` table and skips files already listed there.
+- Each migration runs in a transaction together with its record, so a failing file leaves nothing half-applied and is not marked as done.
+- If the connection fails it prints only an error code, because the driver's own message can include the host and user name.
+
+I ran it twice. The first run applied all 8 files; the second skipped all 8 and reported "Nothing to do: database is up to date."
+
+**Tables now in the database**
+
+| Table | Columns |
+|---|---|
+| `banners` | 8 |
+| `game_keys` | 6 |
+| `offers` | 7 |
+| `order_items` | 5 |
+| `orders` | 6 |
+| `products` | 9 |
+| `users` | 6 |
+| `schema_migrations` | 2 |
+
+`schema_migrations` is the one table beyond the seven we designed. It is the runner's own record of applied files, which is what makes "runs only once" possible.
+
+**Extension and search checks**
+
+- `pg_trgm` is installed (version 1.6).
+- The trigram index on product titles (`products_title_trgm_idx`) exists.
+- A quick test shows it working: "cyberpnuk" scores 0.43 similarity against "Cyberpunk", above the default match threshold of 0.3.
+- `offers.old_price_cents` is present.
+
+All tables are empty; seed data is the next step.
+
+**Commit:** "Add database schema migrations, migration runner and SCOPE.md", pushed to `origin/master`. It contains `SCOPE.md`, the 8 migration files, `database/migrate.php`, the `database/README.md` update and `chat-log.md`. `backend/.env` remains ignored, and I scanned the staged content for the connection strings before committing; neither appears.
+
+I also added one line to the `SCOPE.md` decisions log for the migration runner.
+
+---
