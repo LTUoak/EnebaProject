@@ -1045,6 +1045,65 @@ the limit might have interrupted your actions so make sure everything i asked yo
 
 ## Assistant
 
-(Progress note mid-turn) Everything from before the interruption is intact on disk. Remaining: update the CI test for cookie sign-in, write the README, update the docs, delete the old branch, then commit, push and verify live.
+(Progress notes mid-turn) Everything from before the interruption is intact on disk. Remaining: update the CI test for cookie sign-in, write the README, update the docs, delete the old branch, then commit, push and verify live.
+
+The commit command failed on quotation marks in the message (nothing was committed; the old branch was deleted as planned). Retrying with the message in a file.
+
+CI passed with the cookie tests. Now waiting for Render and Vercel to finish deploying so I can verify the live site.
+
+Everything you asked for is done, pushed to `master` and live, with one exception: the store is renamed to Eneba, but I have not yet done the detailed pass to match eneba.com's look.
+
+| Request | Result |
+|---|---|
+| Official cover art | Done for all 30 products and the 3 banners |
+| Slow first load | Not removable on the free plan; the site now waits and retries instead of showing an error |
+| Root `README.md` | Done |
+| Rename to Eneba | Done; detailed visual matching still to do |
+| Safer place for the sign-in token | Done: it is now in a cookie that page scripts cannot read |
+| Delete the old branch | Done, locally and on GitHub |
+
+**Cover art**
+
+- 24 games use the publishers' official art from Steam's image servers. I checked each Steam ID against Steam's own listing by name, and that both the portrait cover and the wide banner image exist.
+- Versions of the same game on other platforms share that art.
+- Mario Kart 8 Deluxe uses Nintendo's official image, cropped to portrait. Zelda: Tears of the Kingdom uses the box art from Wikipedia, which is small (268×372) and may look soft. I have not seen these two on the page yet.
+- The images are linked, not copied into the repo. The banners now use wide artwork: Split Fiction, Red Dead Redemption 2 and a Steam deals banner.
+- Putting them in required re-seeding the database, which also reset it to the clean sample data.
+
+**Sign-in security**
+
+The token no longer sits in the browser's local storage. After sign-in the API sets a cookie marked `HttpOnly`, which JavaScript cannot read, so a malicious script on the page cannot steal the sign-in.
+
+Cookies only work when the browser sees the API as part of the same site, and your frontend and backend are on different domains. So the frontend now calls `/api/...` on its own Vercel address, and Vercel forwards those requests to Render. I also added:
+
+- a sign-out endpoint, `POST /api/auth/logout`;
+- a rule that POST requests must be JSON, and a `SameSite=Lax` cookie, which together stop other websites from acting as a signed-in visitor;
+- a Content Security Policy on the site, which limits what scripts can run at all.
+
+The limit on password guesses is still not built; it is listed in the README and `SCOPE.md` as a known limitation.
+
+**Slow first load**
+
+The wake-up time itself cannot be optimised away for free. What changed is how the site behaves during it: reads are retried for about a minute, so a visitor sees loading placeholders and then the content.
+
+**README**
+
+The root `README.md` covers what the project is and that it imitates eneba.com, the live links, a feature status table, the architecture, the data model, the security measures, the known limitations, how to run it, and how it was made with an AI assistant. It contains no secrets; it only says that they live in an untracked `.env` file.
+
+The status table marks the store, product, cart and sign-in pages as "API done, page in progress". Update it as those pages land.
+
+**What I verified on the live site**
+
+- The automatic check on GitHub passed, including new tests for the cookie.
+- Through the Vercel address: the homepage data loads, sign-in sets the cookie with `HttpOnly`, `Secure` and `SameSite=Lax`, order history works with it, and sign-out ends the session.
+- A screenshot of the live homepage shows the real artwork and the Eneba name, so the new security policy is not blocking images or scripts.
+
+**Two settings that are now unused**
+
+`VITE_API_URL` on Vercel no longer does anything and can be removed. `FRONTEND_ORIGINS` on Render still works but no longer matters for the live site, since its requests arrive through Vercel.
+
+**Commits:** "Move sign-in to an HttpOnly cookie, add official cover art, README, rename to Eneba", plus a follow-up commit for this log entry. Both are on `origin/master`.
+
+Next is the store page and product page batch. I'd fold the eneba.com visual matching into the page work, since the header, cards and filters are where the resemblance shows.
 
 ---
