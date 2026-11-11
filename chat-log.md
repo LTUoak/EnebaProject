@@ -456,3 +456,119 @@ All tables are empty; seed data is the next step.
 I also added one line to the `SCOPE.md` decisions log for the migration runner.
 
 ---
+
+## User
+
+git status
+
+## Assistant
+
+The working tree was clean and `master` was up to date with `origin/master` when I ran it:
+
+```text
+On branch master
+Your branch is up to date with 'origin/master'.
+
+nothing to commit, working tree clean
+```
+
+Adding this exchange to `chat-log.md` has since made that one file modified; it will go in with the next commit.
+
+`/export` isn't available in this session, but `chat-log.md` in the repo root holds the full conversation so far.
+
+---
+
+## User
+
+Before starting, read SCOPE.md, README.md and the migration files so you remember what the project is about and it's schema. Remember to keep appending everything to the chat-log, and keep following the rules about .env and never printing it or any other secrets.
+
+Since we have created an empty database, we will now need to fill it with sample data. From what I understand it needs to be done with "seeds". If I am correct, do that, and explain what it is you will be doing exactly.
+
+## Assistant
+
+(Progress notes mid-turn) Yes, seeds are the right approach. I've read the docs and schema and written the user and banner seed data; now writing the products file and the seed runner.
+
+The database is seeded (30 products, 71 offers, 105 past orders). Now checking the data with the queries the homepage blocks and search will use.
+
+Seed data is verified; fixing one line in `SCOPE.md`, then writing the chat log and summary.
+
+You are correct: seeds are the standard way to fill a database with sample data, and your Neon database is now seeded. Migrations create the empty tables; seeds put example rows into them. Nothing is committed yet.
+
+I read `SCOPE.md`, the eight migration files and the two existing READMEs (`backend/` and `database/`). There is no `README.md` in the repo root yet.
+
+**What I did**
+
+1. Wrote the sample data as three small PHP files in `database/seeds`:
+   - `users.php`: 5 sellers and 5 buyers.
+   - `products.php`: 30 products, each with its offers (seller, price, old price, keys in stock) and a count of past sales.
+   - `banners.php`: 3 homepage banners.
+2. Wrote a runner, `database/seed.php`, that reads those files and inserts everything in one transaction, so a failure saves nothing.
+3. Moved the connection code shared with the migration runner into `database/connection.php`; `migrate.php` still works after the change.
+4. Ran the seeder against Neon and checked the result.
+
+The seeder generates the two things that would be tedious to type: fake keys (such as `DEMO-7K2QX-M9RT4-PW3ZC`) and past paid orders built from each product's sales count.
+
+**What is in the database now**
+
+| Table | Rows | Notes |
+|---|---|---|
+| `users` | 10 | 5 sellers (KeyHarbor, PixelVault, NordicKeys, GameLantern, TurboCodes) and 5 buyers |
+| `products` | 30 | 7 platforms, 3 regions; some games appear in several platform or region versions |
+| `offers` | 71 | 2 to 4 sellers per product; 24 have an old price, so they count as deals |
+| `game_keys` | 800 | 576 in stock, 224 already sold |
+| `orders` | 105 | all paid, spread over the last 60 days |
+| `order_items` | 218 | |
+| `banners` | 3 | |
+
+**Checks I ran**
+
+- **Best sellers** ranks correctly: Red Dead Redemption 2 (18 sold), Grand Theft Auto V (16), Elden Ring (14).
+- **Deals** ranks by discount: Red Dead Redemption 2 at 75% off comes first.
+- **Typo search** works on real rows: "cyberpnuk" finds Cyberpunk 2077, "eldn ring" finds both Elden Ring products, "red ded redemtion" finds both Red Dead Redemption 2 products.
+- **Consistency:** every order total equals the sum of its items, and every order item has exactly as many keys as its quantity.
+- One offer (Palworld, second seller) deliberately has no keys, so the product page can show a sold-out offer.
+
+**Running it again**
+
+- `php database/seed.php` does nothing if the database already has data. I confirmed this.
+- `php database/seed.php --reset` deletes all users, products, offers, keys, orders and banners, then seeds again. I ran it once to test; it gives the same data each time. Later this will also delete real sign-ups and orders, so use it deliberately.
+
+**Demo account**
+
+- You can sign in as `demo@example.com`, which already has 21 past orders for testing the order history page.
+- Its password was generated randomly and saved in `backend/.env` as `SEED_DEMO_PASSWORD`. I did not print it and it is not in the repo or this log; open the file to see it.
+- Sellers and the other four buyers have random passwords that were thrown away, so nobody can sign in as them.
+
+**Things you may want to change**
+
+- **Images are placeholders.** Covers and banners use generated images from placehold.co showing the game name. Real cover art is copyrighted and needs choosing, so I left that decision to you; swapping them later means editing URLs in the seed files.
+- **Game titles and release dates are real; prices, sellers and sales numbers are invented.** I wrote the release dates from memory, so check any you plan to rely on.
+- **Data format:** I used PHP files instead of SQL files because passwords must be hashed by PHP and the keys and orders are generated.
+
+I added four lines to the `SCOPE.md` decisions log (seed format, the `--reset` safety rule, the demo password location, placeholder images) and updated `database/README.md` with the commands.
+
+---
+
+## User
+
+Seems good, run git status and confirm that no secrets or .env files are staged. Once confirmed, please commit everything you've done with a clear description and push it to master.
+
+## Assistant
+
+No secrets or `.env` files were staged, so I committed the seed work and pushed it to `master`.
+
+**Git status before committing**
+
+- Modified: `SCOPE.md`, `chat-log.md`, `database/README.md`, `database/migrate.php`.
+- New: `database/connection.php`, `database/seed.php`, and the three files in `database/seeds` (`users.php`, `products.php`, `banners.php`).
+- Ignored and left out: `backend/.env`, `.neon`, `.vs/`.
+
+**Secrets check on the staged content**
+
+- No `.env` file is among the nine staged files, and none is tracked anywhere in the repo.
+- None of the secret values in `backend/.env` appear in the staged content: neither connection string, nor the demo account password.
+- A search for Postgres connection strings and Neon password tokens found nothing.
+
+**Commit:** "Add seed data and seed runner", pushed to `origin/master`. It contains the nine files listed above.
+
+---

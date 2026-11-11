@@ -57,3 +57,7 @@ Stack: React + TypeScript frontend, PHP backend, PostgreSQL on Neon, deployed on
 | 2026-11-10 | Added a `banners` table for the homepage banner block | Assignment: every homepage block must get its content from the backend, and no existing table holds banner content. |
 | 2026-11-10 | Added `old_price_cents` to offers for the deals block | Technical: a discount cannot be shown or ranked without knowing the price before it. |
 | 2026-11-10 | Best sellers ranked from paid orders, with no new table or counter | Technical: the sales data already exists in orders and order items, and a stored counter could drift from it. |
+| 2026-11-11 | Seed data written as PHP arrays loaded by a PHP script, not as SQL files | Technical: passwords must be hashed by PHP, and hundreds of keys and past orders are generated instead of typed by hand. |
+| 2026-11-11 | Seeder only fills an empty database unless run with `--reset` | Technical: rerunning it by accident must not duplicate data or delete real sign-ups and orders. |
+| 2026-11-11 | Demo account password kept in `backend/.env`, not in the repository | Technical: the repository is pushed to GitHub, so no working password should be committed. |
+| 2026-11-11 | Placeholder images for covers and banners | Time: choosing and hosting real artwork is separate work; placeholders let every page be built first. |
