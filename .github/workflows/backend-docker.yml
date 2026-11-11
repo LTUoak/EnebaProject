@@ -1,0 +1,124 @@
+# Builds the backend's Docker image on GitHub's servers and tests the running
+# container against a throwaway PostgreSQL database. This stands in for testing
+# with Docker locally: if this passes, the same Dockerfile will build on Render.
+#
+# Every value below (database password, APP_SECRET, demo password) is a dummy
+# that exists only inside this test run. No real secret is used here.
+
+name: Backend Docker image
+
+on:
+  push:
+    paths:
+      - 'backend/**'
+      - 'database/**'
+      - '.github/workflows/backend-docker.yml'
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: ci-only-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      CI_DB_URL: postgres://postgres:ci-only-password@localhost:5432/postgres?sslmode=disable
+      CI_APP_SECRET: ci-only-secret-ci-only-secret-ci-only-secret
+      CI_DEMO_PASSWORD: ci-only-demo-password
+      ALLOWED_ORIGIN: https://frontend.example
+      API: http://localhost:8080
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the image from backend/Dockerfile
+        run: docker build -t eneba-api backend
+
+      - name: Check that secrets are not inside the image
+        run: |
+          if docker run --rm eneba-api test -e /var/www/html/.env; then
+            echo "A .env file was copied into the image"; exit 1
+          fi
+
+      - name: Create the tables and sample data in the test database
+        run: |
+          printf 'DATABASE_URL_UNPOOLED=%s\nSEED_DEMO_PASSWORD=%s\n' "$CI_DB_URL" "$CI_DEMO_PASSWORD" > backend/.env
+          docker run --rm --network host -v "$PWD":/repo -w /repo eneba-api php database/migrate.php
+          docker run --rm --network host -v "$PWD":/repo -w /repo eneba-api php database/seed.php
+
+      - name: Start the API container the way Render does (settings from environment variables)
+        run: |
+          docker run -d --name api --network host \
+            -e PORT=8080 \
+            -e DATABASE_URL="$CI_DB_URL" \
+            -e APP_SECRET="$CI_APP_SECRET" \
+            -e FRONTEND_ORIGINS="$ALLOWED_ORIGIN" \
+            eneba-api
+          for i in $(seq 1 30); do
+            curl -fsS "$API/api/health" > /dev/null 2>&1 && break
+            sleep 1
+          done
+          curl -fsS "$API/api/health"
+
+      - name: Test the endpoints
+        run: |
+          set -euo pipefail
+          check() { echo "ok: $1"; }
+
+          test "$(curl -fsS "$API/api/home/banners" | jq '.items | length')" -eq 3
+          check "banners block"
+          test "$(curl -fsS "$API/api/home/best-sellers" | jq '.items | length')" -eq 8
+          check "best sellers block"
+          test "$(curl -fsS "$API/api/home/deals" | jq '.items | length')" -eq 8
+          check "deals block"
+          test "$(curl -fsS "$API/api/products" | jq '.total')" -eq 30
+          check "store list"
+          curl -fsS "$API/api/products?search=cyberpnuk" | jq -e '.items[0].title | startswith("Cyberpunk 2077")' > /dev/null
+          check "typo-tolerant search"
+          curl -fsS "$API/api/products/elden-ring-pc-steam-key-global" | jq -e '.product.offers | length == 3' > /dev/null
+          check "product page (address routed to index.php)"
+          test "$(curl -s -o /dev/null -w '%{http_code}' "$API/api/nope")" -eq 404
+          check "unknown address answers 404"
+          test "$(curl -s -o /dev/null -w '%{http_code}' "$API/../src/Auth.php")" -ne 200
+          check "source files are not served"
+
+          test "$(curl -s -o /dev/null -w '%{http_code}' "$API/api/orders")" -eq 401
+          check "order history refuses requests without a token"
+          TOKEN=$(curl -fsS -X POST "$API/api/auth/login" -H 'Content-Type: application/json' \
+            -d "{\"email\":\"demo@example.com\",\"password\":\"$CI_DEMO_PASSWORD\"}" | jq -r '.token')
+          curl -fsS "$API/api/orders" -H "Authorization: Bearer $TOKEN" | jq -e '.items | length > 0' > /dev/null
+          check "sign-in token reaches PHP through Apache"
+          OFFER=$(curl -fsS "$API/api/products/elden-ring-pc-steam-key-global" | jq '.product.offers[0].id')
+          curl -fsS -X POST "$API/api/orders" -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+            -d "{\"items\":[{\"offer_id\":$OFFER,\"quantity\":1}]}" | jq -e '.order.status == "paid" and (.order.items[0].keys | length == 1)' > /dev/null
+          check "checkout delivers a key"
+
+      - name: Test CORS
+        run: |
+          set -euo pipefail
+          HEADERS=$(curl -fsS -D - -o /dev/null "$API/api/health" -H "Origin: $ALLOWED_ORIGIN")
+          echo "$HEADERS" | grep -i "^access-control-allow-origin: $ALLOWED_ORIGIN" > /dev/null
+          echo "ok: the allowed frontend origin is accepted"
+          HEADERS=$(curl -fsS -D - -o /dev/null "$API/api/health" -H "Origin: https://another-site.example")
+          if echo "$HEADERS" | grep -i '^access-control-allow-origin' > /dev/null; then
+            echo "another origin was allowed"; exit 1
+          fi
+          echo "ok: other origins get no permission header"
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X OPTIONS "$API/api/orders" \
+            -H "Origin: $ALLOWED_ORIGIN" -H 'Access-Control-Request-Method: POST')" -eq 204
+          echo "ok: preflight request answered"
+
+      - name: Show container logs if something failed
+        if: failure()
+        run: docker logs api

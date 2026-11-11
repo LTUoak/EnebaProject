@@ -693,3 +693,15 @@ No secrets were staged, so I committed the API and pushed it to `master`.
 **Commit:** "Add PHP JSON API for store, auth, cart and orders", pushed to `origin/master`. It contains the 17 files listed above.
 
 ---
+
+## User
+
+I think it is time for the backend's deployment to Render. I believe to do this properly we need to create a Dockerfile. Docker is not configured nor is it installed on my computer so I would like you to go around that as well as you can. After you've done that, please tell me exactly what you did, why you did it and what for, so I could understand properly.
+
+Now for the frontend. I have heard of the term CORS which should be used so that my backend only responds to request from the frontends domain Vercel. If I understood that correctly, please accomplish it, if not, do what seems best to you. Regardless of what you will do, please explain your steps, your reasoning and so on.
+
+## Assistant
+
+(Progress note mid-turn) Render's docs confirm the approach (Docker language, port from `PORT`, default 10000). Writing the Dockerfile now, plus a GitHub Actions check that builds and tests the image, since Docker isn't available on your machine.
+
+---

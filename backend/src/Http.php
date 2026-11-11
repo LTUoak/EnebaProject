@@ -18,11 +18,19 @@ final class Http
     /**
      * CORS: browsers block a page on one address (the React app) from calling
      * an API on another address unless the API says that origin is allowed.
-     * Allowed origins come from FRONTEND_ORIGINS (comma-separated).
+     * Allowed origins come from FRONTEND_ORIGINS (comma-separated), e.g.
+     * "https://my-app.vercel.app,http://localhost:5173".
+     *
+     * This is a rule browsers enforce to protect users. It does not stop
+     * non-browser tools from calling the API; sign-in tokens protect private data.
      */
     public static function cors(): void
     {
-        $allowed = array_map('trim', explode(',', Config::get('FRONTEND_ORIGINS', 'http://localhost:5173')));
+        // An origin never ends with "/", so forgive one typed into the setting.
+        $allowed = array_map(
+            fn (string $item) => rtrim(trim($item), '/'),
+            explode(',', Config::get('FRONTEND_ORIGINS', 'http://localhost:5173'))
+        );
         $origin  = $_SERVER['HTTP_ORIGIN'] ?? '';
 
         if ($origin !== '' && in_array($origin, $allowed, true)) {
