@@ -12,6 +12,35 @@ php -S localhost:8000 -t backend/public backend/public/index.php
 
 Then open http://localhost:8000/api/health. Settings come from `backend/.env`; see `.env.example` for the variables.
 
+## Deploy to Render
+
+Render builds `backend/Dockerfile` on its own servers; Docker is not needed locally. The image is PHP 8.4 with Apache, serving only `public/`.
+
+1. In the Render Dashboard: **New > Web Service**, choose **Git Provider** and pick this repository.
+2. Fill in the form:
+   - **Language:** Docker
+   - **Branch:** `master`
+   - **Region:** the one closest to the Neon project's region
+   - **Root Directory:** `backend` (if the form asks for a Dockerfile path and build context instead, use `backend/Dockerfile` and `backend`)
+   - **Instance type:** Free
+3. Under **Advanced**, set **Health Check Path** to `/api/health` and add the environment variables:
+
+   | Variable | Value |
+   |---|---|
+   | `DATABASE_URL` | the pooled Neon connection string (same as in `backend/.env`) |
+   | `APP_SECRET` | a new random value of at least 32 characters (Render's "Generate" button works) |
+   | `FRONTEND_ORIGINS` | the frontend's address, e.g. `https://your-app.vercel.app`; several are comma-separated |
+
+4. Click **Create Web Service**. When the deploy finishes, open `https://<service-name>.onrender.com/api/health`.
+
+Every push to the chosen branch redeploys. On the free plan the service sleeps after 15 minutes without traffic and takes about a minute to wake.
+
+`.github/workflows/backend-docker.yml` builds the same image on GitHub for every backend change and tests the running container, so a broken Dockerfile is caught before Render tries it.
+
+## CORS
+
+Browsers only let a web page read answers from an API on another address if the API names that page's origin as allowed. The API allows exactly the origins listed in `FRONTEND_ORIGINS` and no others. This is enforced by browsers; it does not block non-browser tools, so private data is protected by sign-in tokens, not by CORS.
+
 ## Layout
 
 | Path | What it does |

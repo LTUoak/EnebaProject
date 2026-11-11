@@ -65,4 +65,7 @@ Stack: React + TypeScript frontend, PHP backend, PostgreSQL on Neon, deployed on
 | 2026-11-11 | Sign-in with signed tokens (JWT) sent in a header, not cookie sessions | Technical: frontend (Vercel) and backend (Render) are on different domains, where browsers restrict cookies; tokens also need no sessions table. |
 | 2026-11-11 | Checkout runs in one database transaction and always recalculates prices on the server | Technical: a key must never be delivered twice or without an order, and prices sent by a browser cannot be trusted. |
 | 2026-11-11 | Simulated payment always succeeds | Time: the assignment asks for a simulated checkout; a failure path would add screens without showing more. |
+| 2026-11-11 | Backend packaged as a Docker image (official PHP 8.4 + Apache) | Technical: Render has no built-in PHP support but runs any Dockerfile; Apache handles several requests at once, unlike PHP's built-in test server. |
+| 2026-11-11 | Docker image built and tested by GitHub Actions instead of locally | Technical: Docker is not installed on the development machine; GitHub builds the same Dockerfile for free and tests the running container. |
+| 2026-11-11 | CORS allows only the origins listed in `FRONTEND_ORIGINS` | Technical: only the project's own frontend should be able to call the API from a browser; a setting avoids hard-coding the Vercel address. |
 | 2026-11-11 | Placeholder images for covers and banners | Time: choosing and hosting real artwork is separate work; placeholders let every page be built first. |

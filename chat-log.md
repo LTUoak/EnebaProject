@@ -704,4 +704,80 @@ Now for the frontend. I have heard of the term CORS which should be used so that
 
 (Progress note mid-turn) Render's docs confirm the approach (Docker language, port from `PORT`, default 10000). Writing the Dockerfile now, plus a GitHub Actions check that builds and tests the image, since Docker isn't available on your machine.
 
+The CI check passed on the first run: GitHub built the image and all endpoint, sign-in, checkout and CORS tests succeeded inside the container. Now documenting the Render steps and finishing the log.
+
+The backend is ready for Render: the Dockerfile is written and proven to work, but the service itself is not created yet, because that happens in your Render account. The work is pushed on a branch, `deploy/render-docker`, not on `master`.
+
+**How I got around not having Docker**
+
+You don't need Docker on your computer at all: Render builds the image on its own servers from the Dockerfile. The only thing Docker would have given you locally is a way to test the Dockerfile before Render tries it. I replaced that with GitHub Actions, which builds the same Dockerfile on GitHub's servers for free.
+
+That check ran once and passed. It builds the image, starts the container the way Render will, and tests it against a throwaway database.
+
+**What I created and why**
+
+| File | What it is | Why |
+|---|---|---|
+| `backend/Dockerfile` | The recipe for the container image | Render has no built-in PHP support but runs any Dockerfile |
+| `backend/docker/vhost.conf` | Settings for the Apache web server inside the image | Serves only `public/` and sends every address to `index.php` |
+| `backend/.dockerignore` | List of files never copied into the image | Keeps `.env` files out of it |
+| `.github/workflows/backend-docker.yml` | The automatic build-and-test check | Stands in for testing with Docker locally |
+
+The Dockerfile does five things, in order:
+
+1. Starts from the official image that already contains PHP 8.4 and Apache. Apache is a real web server that handles several visitors at once; the `php -S` command you use locally is only meant for testing.
+2. Adds the PostgreSQL driver, which PHP needs to talk to Neon.
+3. Switches PHP to production settings, so error details go to the server log and never to visitors.
+4. Makes Apache listen on the port Render assigns through its `PORT` variable.
+5. Copies in `public/` and `src/`. Your `.env` file is not copied; on Render the settings come from its Environment page.
+
+**What the check proved**
+
+- The image builds, and no `.env` file is inside it.
+- All three homepage blocks, the store list, typo search and the product page answer correctly.
+- Sign-in works and the token reaches PHP through Apache, which is a common failure point with this setup.
+- A checkout delivers a key.
+- CORS accepts the allowed origin and gives no permission to another one.
+
+The check uses dummy credentials that exist only inside the test run. One of them is a dummy database address written in the workflow file; it is not your Neon string.
+
+**CORS: your understanding, corrected slightly**
+
+You have the main idea right: the API should accept browser requests only from your frontend's address. Two details matter:
+
+- **CORS is enforced by browsers, not by the server.** The API tells the browser which website addresses may read its answers, and the browser blocks the rest. A tool that is not a browser can still call the API. So CORS stops other websites from using your API through their visitors' browsers, and the sign-in tokens are what protect private data.
+- **It was already built into the API last turn.** The API reads the allowed addresses from a setting called `FRONTEND_ORIGINS` and answers no other origin.
+
+What I did this turn:
+
+- Made the setting ignore a trailing `/`, a common typing mistake that would silently block the frontend.
+- Added CORS tests to the automatic check.
+- Documented it in `backend/README.md`.
+
+The Vercel address does not exist yet, because the frontend is not deployed. When it is, you put that address in `FRONTEND_ORIGINS` on Render and nothing in the code changes. Vercel also creates a different address for every preview deployment; only addresses you list will work.
+
+**What you need to do on Render**
+
+First the branch has to be merged into `master`; tell me and I'll do it. Then:
+
+1. In the Render Dashboard: New > Web Service, choose Git Provider and pick the `EnebaProject` repository.
+2. Set Language to Docker, Branch to `master`, Root Directory to `backend`, and the Free instance type. For Region, pick the one closest to your Neon project's region, which the Neon console shows.
+3. Under Advanced, set Health Check Path to `/api/health` and add three environment variables:
+   - `DATABASE_URL`: copy the value from your `backend/.env`.
+   - `APP_SECRET`: use Render's Generate button. It should differ from your local one.
+   - `FRONTEND_ORIGINS`: `http://localhost:5173` for now; replace it with the Vercel address later.
+4. Click Create Web Service, wait for the deploy, then open `https://<service-name>.onrender.com/api/health`.
+
+These steps are also in `backend/README.md`. I checked them against Render's documentation, except the Root Directory field name, which I wrote from memory; if the form asks for a Dockerfile path and build context instead, use `backend/Dockerfile` and `backend`.
+
+**Free plan limits, from Render's documentation**
+
+- The service sleeps after 15 minutes without traffic and takes about a minute to wake.
+- You get 750 free hours per month.
+- Render may restart a free service at any time.
+
+**Commits**
+
+Two commits are on `deploy/render-docker`: the deployment files, then the documentation and this log. I used a branch because pushing to it was the only way to run the check, and you had not asked for a commit to `master`. I also added three lines to the `SCOPE.md` decisions log.
+
 ---
