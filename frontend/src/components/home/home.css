@@ -3,79 +3,173 @@
 .home {
   display: flex;
   flex-direction: column;
-  gap: var(--space-7);
+  gap: var(--space-6);
+  padding-bottom: var(--space-6);
 }
 
-/* Banner */
-.banner {
-  position: relative;
+/* --- Promo strip: full width, one large advert and narrow tiles ------------ */
+
+.promo {
   display: flex;
-  align-items: center;
-  min-height: 320px;
-  background: var(--color-bg-deep);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  height: 300px;
+  background: #12062e;
+}
+
+.promo a {
+  position: relative;
   overflow: hidden;
 }
 
-.banner-image {
+.promo img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.3s;
 }
 
-.banner-content {
+.promo a:hover img {
+  transform: scale(1.04);
+}
+
+.promo-main {
+  flex: 1 1 58%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Darken the artwork so the advert text is what you read. */
+.promo-main::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(18, 6, 46, 0.92) 0%, rgba(18, 6, 46, 0.8) 45%, rgba(18, 6, 46, 0.35) 100%);
+}
+
+.promo-main-text {
   position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-3);
-  max-width: 520px;
-  margin: var(--space-5);
-  padding: var(--space-5);
-  background: rgba(31, 10, 77, 0.85);
-  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  text-align: center;
 }
 
-.banner-content h2 {
-  font-size: 2rem;
+.promo-main-text h2 {
+  font-size: clamp(2rem, 4.5vw, 3.5rem);
+  font-weight: 900;
+  font-style: italic;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  color: #ffd9a8;
+  text-shadow:
+    0 0 12px rgba(255, 138, 61, 0.9),
+    0 0 36px rgba(255, 94, 58, 0.7);
 }
 
-.banner-content p {
-  color: var(--color-text-muted);
+.promo-main-text p {
+  font-size: clamp(1rem, 1.8vw, 1.375rem);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.banner-dots {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: var(--space-3);
-  display: flex;
-  justify-content: center;
-  gap: var(--space-2);
-}
-
-.banner-dot {
-  width: 28px;
-  height: 8px;
-  padding: 0;
-  background: rgba(255, 255, 255, 0.45);
-  border: none;
-  border-radius: 4px;
-}
-
-.banner-dot-active {
+.promo-cta {
+  margin-top: var(--space-2);
+  padding: var(--space-2) var(--space-7);
   background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.banner-skeleton {
+.promo-main:hover .promo-cta {
+  background: var(--color-accent-hover);
+}
+
+.promo-tile {
+  flex: 1 1 14%;
+  display: flex;
+  align-items: flex-end;
+  border-left: 2px solid #12062e;
+}
+
+.promo-tile::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(18, 6, 46, 0.95) 0%, rgba(18, 6, 46, 0.55) 45%, rgba(70, 24, 172, 0.25) 100%);
+}
+
+.promo-tile-text {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: var(--space-3);
+  text-align: center;
+}
+
+.promo-tile-text h3 {
+  font-size: 1.375rem;
+  font-weight: 900;
+  font-style: italic;
+  text-transform: uppercase;
+  line-height: 1.05;
+  color: var(--color-accent);
+}
+
+.promo-tile-text p {
+  margin-top: var(--space-1);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.promo-skeleton {
   background: var(--color-surface);
   animation: skeleton-pulse 1.2s ease-in-out infinite alternate;
 }
 
-/* Product blocks */
+.promo-message {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  color: var(--color-text-muted);
+}
+
+/* --- Category row ---------------------------------------------------------- */
+
+.categories {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.category {
+  flex: 1 0 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-2);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.category:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* --- Product blocks -------------------------------------------------------- */
+
 .home-block-header {
   display: flex;
   align-items: baseline;
@@ -85,7 +179,8 @@
 }
 
 .home-block-header h2 {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
+  font-weight: 800;
 }
 
 .home-block-more {
@@ -122,6 +217,11 @@
   .product-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  /* Keep the large advert and two tiles; there is no room for more. */
+  .promo-tile:nth-of-type(n + 4) {
+    display: none;
+  }
 }
 
 @media (max-width: 600px) {
@@ -130,22 +230,21 @@
     gap: var(--space-3);
   }
 
-  .banner {
-    min-height: 240px;
+  .promo {
+    height: 220px;
   }
 
-  .banner-content {
-    margin: var(--space-3);
-    padding: var(--space-4);
-  }
-
-  .banner-content h2 {
-    font-size: 1.5rem;
+  .promo-tile {
+    display: none;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .banner-skeleton {
+  .promo-skeleton {
     animation: none;
+  }
+
+  .promo img {
+    transition: none;
   }
 }

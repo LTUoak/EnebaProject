@@ -1,29 +1,39 @@
 <?php
 /**
- * Seed data: homepage banners.
+ * Seed data: the homepage promo strip.
  *
- * 'link' is either ['product' => [<game>, <device>, <platform>, <region>]]
- * (resolved to that product's page by the seeder) or a plain URL path.
- * 'hero' names a game from images.php whose wide artwork is the background.
+ * The first banner is the large advert; the rest are the narrow tiles beside
+ * it. They advertise deals in general (not one game) and each links to the
+ * store with filters applied.
+ *
+ * 'link' is either a plain URL path, or ['product' => [<game>, <device>,
+ * <platform>, <region>]] to link to one product's page.
+ * 'hero' names a game from images.php whose wide artwork is the backdrop.
  */
 
 return [
     [
-        'title'    => 'Split Fiction',
-        'subtitle' => 'Two worlds, one co-op adventure. Now 34% off.',
-        'hero'     => 'Split Fiction',
-        'link'     => ['product' => ['Split Fiction', 'PC', 'Steam', 'GLOBAL']],
+        'title'    => 'Autumn Deals',
+        'subtitle' => 'Save up to 75% on top games',
+        'hero'     => 'Cyberpunk 2077',
+        'link'     => '/store?on_sale=1&sort=discount',
     ],
     [
-        'title'    => 'Red Dead Redemption 2',
-        'subtitle' => 'The western epic at its lowest price: 75% off.',
-        'hero'     => 'Red Dead Redemption 2',
-        'link'     => ['product' => ['Red Dead Redemption 2', 'PC', 'Rockstar', 'GLOBAL']],
-    ],
-    [
-        'title'    => 'Steam deals',
-        'subtitle' => 'Top PC games at lower prices from several sellers.',
+        'title'    => 'Steam keys',
+        'subtitle' => 'Cheapest sellers first',
         'hero'     => 'Elden Ring',
-        'link'     => '/store?platform=Steam',
+        'link'     => '/store?platform=Steam&sort=price_asc',
+    ],
+    [
+        'title'    => 'Under €10',
+        'subtitle' => 'Great games for less',
+        'hero'     => 'Hades',
+        'link'     => '/store?max_price=1000&sort=price_asc',
+    ],
+    [
+        'title'    => 'Console keys',
+        'subtitle' => 'Xbox, PlayStation, Nintendo',
+        'hero'     => 'God of War Ragnarök',
+        'link'     => '/store?platform=Xbox%20Live,PSN,Nintendo%20eShop',
     ],
 ];

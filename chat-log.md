@@ -1107,3 +1107,31 @@ The status table marks the store, product, cart and sign-in pages as "API done, 
 Next is the store page and product page batch. I'd fold the eneba.com visual matching into the page work, since the header, cards and filters are where the resemblance shows.
 
 ---
+
+## User
+
+(Attached a screenshot of eneba.com's homepage: purple header with logo on the left and search, wishlist, cart and account icons on the right; a full-width promo strip with one large advert and three narrow tiles; below it a row of category icons such as Games, Steam, PSN and Xbox.)
+
+Okay, do them in the order that seems best. 
+
+I would also like for you to try and to get as close as possible to the way eneba's site actually looks. The game cards look great, but some details ar off. For example the search bar should be placed in an icon on the top right, and the main banner for the deals should stretch across the whole and act as more of an advert of the deals that are currently available. The banner should not be for specific games but deals as a whole, and the look should match it. Also keep in mind the categories of keys that can be used as filters on the main homepage as seen in my screenshot.
+
+Please write all the steps you will take while making changes or adding new features, and give proper reasonings and/or drawbacks that might arise.
+
+Do not forget to always keep track of the chat logs, and what not to track. If everything goes well, commit.
+
+## Assistant
+
+(Progress notes mid-turn) Starting the batch: restyling the header and homepage to follow your Eneba screenshot, then the store and product pages. I'll commit when each part passes its checks.
+
+Header, icons and cart state are written. Now the homepage: full-width deals banner and the category row.
+
+Homepage blocks are rewritten. Now the store page (search, filters, sorting, paging) and the product page.
+
+All pages are written. Building, reseeding the new banners, and taking screenshots of the home, store and product pages.
+
+Screenshots are taken; reviewing them now.
+
+All three pages look right in the screenshots. Committing this first batch now, then continuing with cart, sign-in, checkout and order history.
+
+---

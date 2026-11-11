@@ -15,9 +15,9 @@ The backend runs on a free plan that sleeps when idle, so the first page load af
 |---|---|
 | Database schema, sample data | Done |
 | Backend API (all endpoints) | Done |
-| Homepage built from separate blocks (banner, best sellers, deals) | Done |
-| Store page: search with typo tolerance, filters, sorting | API done, page in progress |
-| Product page with offers from several sellers | API done, page in progress |
+| Homepage built from separate blocks (deals banner, categories, best sellers, top deals) | Done |
+| Store page: search with typo tolerance, filters, sorting, paging | Done |
+| Product page with offers from several sellers | Done |
 | Cart and simulated checkout that delivers a key | API done, page in progress |
 | Sign-up, sign-in, protected checkout and order history | API done, page in progress |
 
