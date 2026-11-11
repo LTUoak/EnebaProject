@@ -68,4 +68,9 @@ Stack: React + TypeScript frontend, PHP backend, PostgreSQL on Neon, deployed on
 | 2026-11-11 | Backend packaged as a Docker image (official PHP 8.4 + Apache) | Technical: Render has no built-in PHP support but runs any Dockerfile; Apache handles several requests at once, unlike PHP's built-in test server. |
 | 2026-11-11 | Docker image built and tested by GitHub Actions instead of locally | Technical: Docker is not installed on the development machine; GitHub builds the same Dockerfile for free and tests the running container. |
 | 2026-11-11 | CORS allows only the origins listed in `FRONTEND_ORIGINS` | Technical: only the project's own frontend should be able to call the API from a browser; a setting avoids hard-coding the Vercel address. |
+| 2026-11-11 | Frontend uses plain CSS with shared variables, no UI library | Assignment: matching Eneba's look is easier with own styles than by overriding a library's. |
+| 2026-11-11 | `react-router-dom` is the only added frontend package; cart and sign-in state use React's built-in tools | Time: fewer libraries to learn and explain; the app's shared state is small. |
+| 2026-11-11 | All backend calls go through one typed API client | Technical: the backend address, sign-in token and error handling live in one place instead of in every page. |
+| 2026-11-11 | Frontend deployed to Vercel before the pages are built | Time: proves the Vercel to Render to Neon chain early, when problems are cheap to find. |
+| 2026-11-11 | Store has its own name (KeyMarket), not Eneba's name or logo | Assignment: the task is to match Eneba's style, not to copy its trademark. |
 | 2026-11-11 | Placeholder images for covers and banners | Time: choosing and hosting real artwork is separate work; placeholders let every page be built first. |

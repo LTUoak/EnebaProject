@@ -801,3 +801,109 @@ Once the build passes, the service also needs the three environment variables (`
 I merged without asking first because you had already started deploying from `master` and this was the step blocking it. It was a fast-forward, so `master` simply gained the two branch commits, plus one commit for this log entry.
 
 ---
+
+## User
+
+Okay, now the deployment was successful and the backend seems to work.
+
+It is time for the frontend. The adress Igot from render was: https://enebaproject-ggfy.onrender.com.
+
+What steps should go next?
+
+## Assistant
+
+The deployed backend works: I checked it at that address and it serves data from Neon. The next step is to build the frontend foundation and deploy it to Vercel straight away, before building all the pages.
+
+**What I checked on the live backend**
+
+- `/api/health` answers, the deals block returns 8 products, and the typo search finds Cyberpunk 2077, so the database connection is set correctly.
+- Order history refuses requests without a token.
+- CORS allows `http://localhost:5173` and refuses another origin, so you can develop locally against the live backend already.
+
+**Recommended order**
+
+1. **Foundation.** Add page routing (the `react-router-dom` package), a small API client that reads the backend address from a setting (`VITE_API_URL`), shared TypeScript types for the API's answers, and the page frame: header with search, cart and sign-in, plus a footer, in Eneba's colours.
+2. **Deploy to Vercel now, while the app is nearly empty.** This proves the whole chain (Vercel → Render → Neon) early, when problems are easy to find. It involves three settings:
+   - on Vercel, Root Directory `frontend` and the variable `VITE_API_URL` set to the Render address;
+   - a small `vercel.json` so that reloading a page such as `/product/...` does not give a 404;
+   - on Render, the Vercel address added to `FRONTEND_ORIGINS`.
+3. **Homepage:** the banner, best sellers and deals blocks, each loading from its own endpoint. This is the assignment's most specific requirement and also produces the product card used everywhere else.
+4. **Store page:** search, filters, sorting and paging.
+5. **Product page:** the offers from several sellers, with "add to cart".
+6. **Cart:** kept in the browser, priced through `/api/cart/quote`.
+7. **Sign-up and sign-in,** then the protected pages: **checkout** (shows the delivered keys) and **order history**.
+8. **Polish:** loading and error states, mobile layout, real images, and a root `README.md`.
+
+Each step ends with something working that can be committed and is live on Vercel after a push.
+
+**Choices I'd make, unless you prefer otherwise**
+
+- **Styling:** plain CSS with shared colour and spacing variables, no UI library. Matching Eneba's look is easier with your own styles than by overriding a library's.
+- **State:** React's built-in tools for the cart and the signed-in user, no extra state library.
+- **Only one new package:** `react-router-dom`.
+
+**Two things only you can do**
+
+- Create the Vercel project in your account (I'll give the exact settings, as with Render).
+- Decide whether to use real cover art or keep placeholders; this can wait until the polish step.
+
+The free Render service sleeps after 15 minutes, so the first load of the site after a pause will take up to a minute. The frontend should show loading states for that, which step 3 will include.
+
+Say "start" and I'll do steps 1 and 2, up to the point where you create the Vercel project.
+
+---
+
+## User
+
+That sounds good, you can start.
+
+## Assistant
+
+(Progress notes mid-turn) Starting on the frontend foundation: installing the router, then writing the API client, layout and routes.
+
+Foundation files are written (API client, layout, routes, styles). Now building and linting to check they compile.
+
+The frontend foundation is built and pushed to `master`, so it is ready for you to create the Vercel project. It builds and passes the linter, but I have not looked at it in a browser, so the visual result is unchecked.
+
+**What exists now**
+
+- **Routing:** every page address is defined in `src/App.tsx`: home, store, product, cart, sign-in, sign-up, checkout and order history. All except home show a "coming soon" placeholder for now.
+- **API client** (`src/api/client.ts`): one typed function per backend endpoint, such as `api.deals()` or `api.products({ search })`. It adds the sign-in token and turns every failure into one error type.
+- **Types** (`src/api/types.ts`): the shapes of the backend's answers, so TypeScript catches mistakes such as a misspelled field.
+- **Page frame:** a header with logo, search box and links, plus a footer. Searching opens `/store?search=...`.
+- **Styles** (`src/index.css`): the colours and spacing as shared variables, using a purple background with a yellow action colour.
+- **Temporary homepage:** it asks the backend how many products exist and shows "Connected: 30 products in the store." This is the proof that Vercel, Render and Neon are connected; the real homepage blocks replace it next.
+
+I removed the Vite demo files (sample page, logos) and added `react-router-dom` as the only new package.
+
+**Decision for you: the store's name**
+
+I named it "KeyMarket" as a placeholder, because using Eneba's own name or logo would be copying its trademark, not its style. It is set in one place, `src/config.ts`, plus the browser tab title in `index.html`. Tell me the name you want.
+
+**Your steps on Vercel**
+
+1. In the Vercel dashboard: Add New > Project, and import the `EnebaProject` repository.
+2. Set Root Directory to `frontend`. Vercel should detect Vite by itself.
+3. Under Environment Variables, add `VITE_API_URL` with the value `https://enebaproject-ggfy.onrender.com`.
+4. Click Deploy and copy the address Vercel gives you.
+
+Then one step on Render: open the backend's Environment page and change `FRONTEND_ORIGINS` to your Vercel address followed by `,http://localhost:5173`. Without this the page will load but show "Could not reach the server", because the browser blocks the request.
+
+I wrote the Vercel steps from memory, not from its current documentation, so button names may differ slightly. They are also in `frontend/README.md`.
+
+**How to tell it worked**
+
+Open the Vercel address. The homepage should show "Connected: 30 products in the store." The first load can take up to a minute if the Render service was asleep. Reloading `/store` should show the placeholder page, not a 404; `vercel.json` handles that.
+
+**To run it on your computer**
+
+```
+cd frontend
+npm run dev
+```
+
+It expects the backend at `http://localhost:8000` unless you create `frontend/.env.local` with the Render address, as described in `frontend/README.md`.
+
+**Commit:** "Add frontend foundation: routing, API client, layout and Vercel config", pushed to `origin/master` after the usual secrets check. Send me the Vercel address once it is deployed and I'll verify the live site and move on to the homepage blocks.
+
+---

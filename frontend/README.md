@@ -1,32 +1,42 @@
-# React + TypeScript + Vite
+# Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React + TypeScript, built with Vite. Plain CSS with shared variables; the only added package is `react-router-dom` for page addresses.
 
-Currently, two official plugins are available:
+## Run locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```
+cd frontend
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Open http://localhost:5173. The app calls the backend at `VITE_API_URL`; without that setting it expects the backend at `http://localhost:8000` (start it with the command in `backend/README.md`). To use the deployed backend instead, create `frontend/.env.local` containing:
+
+```
+VITE_API_URL=https://enebaproject-ggfy.onrender.com
+```
+
+Other commands: `npm run build` (type-check and build into `dist/`), `npm run lint`.
+
+## Layout
+
+| Path | What it does |
+|---|---|
+| `src/main.tsx` | Starts React. |
+| `src/App.tsx` | Lists every page address (route). |
+| `src/config.ts` | The store's name. |
+| `src/index.css` | Design tokens (colours, spacing) and base styles. |
+| `src/api/client.ts` | The only code that calls the backend: `api.deals()`, `api.products(...)`, and so on. |
+| `src/api/types.ts` | TypeScript shapes of the backend's answers. |
+| `src/components/` | Pieces shared by pages: `Layout`, `Header`, `Footer`. |
+| `src/pages/` | One component per page. |
+
+## Deploy to Vercel
+
+1. In the Vercel dashboard: **Add New > Project**, import this repository.
+2. Set **Root Directory** to `frontend`. Vercel detects Vite and fills in the build settings.
+3. Under **Environment Variables**, add `VITE_API_URL` = `https://enebaproject-ggfy.onrender.com`.
+4. Click **Deploy**.
+5. On Render, add the new Vercel address to the backend's `FRONTEND_ORIGINS` variable (comma-separated, no trailing slash). Without this the browser blocks the frontend's requests.
+
+`vercel.json` sends every address to `index.html`, so reloading a page such as `/product/...` works instead of giving a 404. Every push to `master` redeploys.
