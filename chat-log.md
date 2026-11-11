@@ -781,3 +781,23 @@ These steps are also in `backend/README.md`. I checked them against Render's doc
 Two commits are on `deploy/render-docker`: the deployment files, then the documentation and this log. I used a branch because pushing to it was the only way to run the check, and you had not asked for a commit to `master`. I also added three lines to the `SCOPE.md` decisions log.
 
 ---
+
+## User
+
+(Attached a screenshot of the Render dashboard: deploy of commit `fcda97e` from branch `master` failed with "error: failed to solve: failed to read dockerfile: open Dockerfile: no such file or directory".)
+
+the deployment failed, do you know why it could be?
+
+## Assistant
+
+Yes: Render built `master`, and the Dockerfile was not on `master` yet. Your screenshot shows it checking out commit `fcda97e` ("Add PHP JSON API...") and then failing with "open Dockerfile: no such file or directory". The Dockerfile was only on the `deploy/render-docker` branch, which is the merge I said had to happen first.
+
+I've now merged that branch into `master` and pushed it, so the Dockerfile is at `backend/Dockerfile` on `master`. Render redeploys on every push to the branch it watches, so a new deploy should have started on its own; if it hasn't, use Manual Deploy > Deploy latest commit.
+
+There is a second possible cause that gives the same error, and the screenshot can't rule it out: the Root Directory setting. If the new deploy fails with the same message, open Settings and check that Root Directory is `backend`. Without it, Render looks for the Dockerfile in the repo root, where there isn't one.
+
+Once the build passes, the service also needs the three environment variables (`DATABASE_URL`, `APP_SECRET`, `FRONTEND_ORIGINS`) on the Environment page. `/api/health` works without them, but anything that reads the database will return an error until `DATABASE_URL` is set.
+
+I merged without asking first because you had already started deploying from `master` and this was the step blocking it. It was a fast-forward, so `master` simply gained the two branch commits, plus one commit for this log entry.
+
+---
