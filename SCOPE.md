@@ -60,4 +60,9 @@ Stack: React + TypeScript frontend, PHP backend, PostgreSQL on Neon, deployed on
 | 2026-11-11 | Seed data written as PHP arrays loaded by a PHP script, not as SQL files | Technical: passwords must be hashed by PHP, and hundreds of keys and past orders are generated instead of typed by hand. |
 | 2026-11-11 | Seeder only fills an empty database unless run with `--reset` | Technical: rerunning it by accident must not duplicate data or delete real sign-ups and orders. |
 | 2026-11-11 | Demo account password kept in `backend/.env`, not in the repository | Technical: the repository is pushed to GitHub, so no working password should be committed. |
+| 2026-11-11 | API written in plain PHP with a small router, no framework | Time: about 14 endpoints do not need one, and less code to learn means every line can be explained; it also needs no extra install step on Render. |
+| 2026-11-11 | REST-style JSON API with one endpoint per homepage block | Assignment: each homepage block must load from its own backend source. |
+| 2026-11-11 | Sign-in with signed tokens (JWT) sent in a header, not cookie sessions | Technical: frontend (Vercel) and backend (Render) are on different domains, where browsers restrict cookies; tokens also need no sessions table. |
+| 2026-11-11 | Checkout runs in one database transaction and always recalculates prices on the server | Technical: a key must never be delivered twice or without an order, and prices sent by a browser cannot be trusted. |
+| 2026-11-11 | Simulated payment always succeeds | Time: the assignment asks for a simulated checkout; a failure path would add screens without showing more. |
 | 2026-11-11 | Placeholder images for covers and banners | Time: choosing and hosting real artwork is separate work; placeholders let every page be built first. |

@@ -572,3 +572,124 @@ No secrets or `.env` files were staged, so I committed the seed work and pushed 
 **Commit:** "Add seed data and seed runner", pushed to `origin/master`. It contains the nine files listed above.
 
 ---
+
+## User
+
+Okay, next we will need some sort of API to connect the frontend to the backend. I have not built one before so I will need you to do it. I know that this may require a framework, but only use one if it seems necessary. I would like you to create an API that suits this project the most and explain to me why you created it the way you chose and how it will be used.
+
+## Assistant
+
+(Progress notes mid-turn) I'm building the API in plain PHP (no framework). The shell rejected my first batch of files, so I'm writing them individually now.
+
+All API files are written. Now adding the signing secret to `backend/.env` (without printing it), starting the server locally and testing every endpoint.
+
+Nearly all checks pass; one test used the wrong offer ID for the sold-out case, so I'm re-testing that, then resetting the test data.
+
+The API works end to end and the test data is reset. Now writing the documentation (`backend/README.md`, `.env.example`, `SCOPE.md`) and the chat log.
+
+The API is built in `backend/` and works: I ran it locally against your Neon database and tested all 14 endpoints, including sign-up, checkout and key delivery. I did not use a framework. Nothing is committed yet, and it is not deployed.
+
+**What an API is here**
+
+The React app cannot talk to the database directly. Instead it asks the API for data at web addresses ("endpoints"), and the API answers in JSON, a plain text format JavaScript reads natively. For example, the store page asks `GET /api/products?search=eldn+ring` and gets back a list of matching products.
+
+**Why no framework**
+
+- The project needs about 14 endpoints. A framework such as Laravel brings hundreds of files and its own concepts to learn, which costs more of your week than it saves.
+- What a framework would provide here is small: matching addresses to code (a 50-line router) and reading and sending JSON (a 90-line helper).
+- You have to explain this project, and every line of it is now code you can open and read.
+- There are no packages to install, which also keeps deployment on Render simple.
+
+**The endpoints**
+
+| Method | Address | Sign-in | Used by |
+|---|---|---|---|
+| GET | `/api/health` | no | checking the API is up |
+| GET | `/api/home/banners` | no | homepage banner block |
+| GET | `/api/home/best-sellers` | no | homepage best sellers block |
+| GET | `/api/home/deals` | no | homepage deals block |
+| GET | `/api/products` | no | store page: search, filters, sorting, paging |
+| GET | `/api/products/filters` | no | the store's filter panel |
+| GET | `/api/products/{slug}` | no | product page with all sellers' offers |
+| POST | `/api/auth/register` | no | sign-up |
+| POST | `/api/auth/login` | no | sign-in |
+| GET | `/api/auth/me` | yes | checking who is signed in on page load |
+| POST | `/api/cart/quote` | no | cart page: current prices and stock |
+| POST | `/api/orders` | yes | checkout |
+| GET | `/api/orders` | yes | order history |
+| GET | `/api/orders/{id}` | yes | one order |
+
+`GET` reads data and `POST` sends data to create something. `backend/README.md` documents the parameters, request bodies and error format.
+
+**Design choices and why**
+
+- **One endpoint per homepage block.** This is the assignment's requirement; the frontend loads the three blocks separately, so one failing does not break the others.
+- **Sign-in uses a token, not cookies.** After sign-in the API returns a signed token, and the frontend sends it in a header on protected requests. Your frontend (Vercel) and backend (Render) will be on different domains, where browsers restrict cookies. Tokens also need no extra table.
+- **Prices are never taken from the browser.** The cart and checkout send only offer IDs and quantities; the API looks up prices and stock itself.
+- **Checkout is all-or-nothing.** The order, its items and the keys are saved in one database transaction. If one item is out of stock, nothing is saved. Two buyers checking out at the same moment cannot receive the same key.
+- **Errors always look the same:** `{"error": {"message": ..., "fields": ...}}` with a matching status code, so the frontend handles them in one place.
+- **Protected pages are enforced by the API.** Checkout and order history answer "please sign in" without a valid token, and a user asking for someone else's order gets "not found".
+- **Passwords are stored only as hashes,** and sign-in gives the same message for a wrong password and an unknown email.
+
+**How the frontend will use it**
+
+1. On the homepage, three components each call their own `/api/home/...` address and render the result.
+2. The store page calls `/api/products` with the chosen search text, filters and sort, and `/api/products/filters` to draw the filter panel.
+3. The product page calls `/api/products/{slug}`; "add to cart" saves the offer ID and quantity in the browser.
+4. The cart page sends its items to `/api/cart/quote` to show current prices.
+5. Sign-in saves the returned token in the browser; checkout sends the cart to `/api/orders` with the token and shows the returned keys.
+
+To run it yourself, from the repo root:
+
+```
+php -S localhost:8000 -t backend/public backend/public/index.php
+```
+
+Then open http://localhost:8000/api/home/deals in a browser.
+
+**What I tested**
+
+- Each homepage block, the store list with every filter and sort, and the product page return the expected data.
+- Typo search: "cyberpnuk", "eldn ring", "red ded redemtion" and "spiderman" all find the right products.
+- Sign-up validation, duplicate email, wrong password, and a tampered token are all rejected.
+- A real checkout created a paid order, delivered 3 keys and reduced stock from 12 to 10.
+- A checkout containing a sold-out offer was refused and left no order and no stock change.
+
+Afterwards I reset the database to the clean seed data, so the test account and test orders are gone.
+
+**Things to know**
+
+- **New secret:** I added `APP_SECRET` to `backend/.env` (random, not printed, not in the repo). It signs the tokens, and Render will need its own value when you deploy.
+- **Search limits:** it handles typos, not abbreviations; "gta" finds nothing.
+- **Payment always succeeds;** there is no failed-payment path.
+- **No rate limiting:** nothing stops repeated password guesses. That is acceptable for a demo but worth naming if asked.
+- **Not done yet:** the Dockerfile for Render, and the frontend code that calls these endpoints.
+
+I also added `backend/.env.example` (variable names only), rewrote `backend/README.md` as the API reference, and added five lines to the `SCOPE.md` decisions log.
+
+---
+
+## User
+
+Great,  please commit everything with an accurate description and push it to master. But before doing that, run git status and make sure the secrets are not staged
+
+## Assistant
+
+No secrets were staged, so I committed the API and pushed it to `master`.
+
+**Git status before committing**
+
+- Modified: `SCOPE.md`, `backend/README.md`, `chat-log.md`.
+- New: `backend/.env.example`, `backend/public/index.php`, and the 12 PHP files in `backend/src`.
+- Ignored and left out: `backend/.env`, `.neon`, `.vs/`.
+
+**Secrets check on the staged content**
+
+- `backend/.env` is not staged and is not tracked.
+- `backend/.env.example` is staged on purpose. It holds variable names only; the one filled-in value is the local frontend address `http://localhost:5173`, which is not a secret.
+- None of the secret values in `backend/.env` appear in the staged content: neither connection string, the demo password, nor the new `APP_SECRET`.
+- A search for Postgres connection strings and Neon password tokens found nothing.
+
+**Commit:** "Add PHP JSON API for store, auth, cart and orders", pushed to `origin/master`. It contains the 17 files listed above.
+
+---
