@@ -46,8 +46,9 @@ set_error_handler(function (int $level, string $message, string $file, int $line
     throw new ErrorException($message, 0, $level, $file, $line);
 });
 
-// 3. CORS
+// 3. CORS, and the rule that POST requests must be JSON
 Http::cors();
+Http::requireJsonForPost();
 
 // 4. Routes: every address the API answers, in one place.
 $router = new Router();
@@ -67,6 +68,7 @@ $router->get('/api/products/{slug}',   ProductController::show(...));
 // Accounts
 $router->post('/api/auth/register',    AuthController::register(...));
 $router->post('/api/auth/login',       AuthController::login(...));
+$router->post('/api/auth/logout',      AuthController::logout(...));
 $router->get('/api/auth/me',           AuthController::me(...));
 
 // Cart (lives in the browser; this only prices it)

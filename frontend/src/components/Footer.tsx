@@ -6,7 +6,8 @@ export function Footer() {
     <footer className="footer">
       <div className="container footer-inner">
         <p>
-          <strong>{SITE_NAME}</strong> is a student project. Payments are simulated and all game keys are fake.
+          This is a student project built in the style of {SITE_NAME}. It is not the real {SITE_NAME} store and is
+          not affiliated with it. Payments are simulated and all game keys are fake.
         </p>
       </div>
     </footer>

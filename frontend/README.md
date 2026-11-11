@@ -10,10 +10,10 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173. The app calls the backend at `VITE_API_URL`; without that setting it expects the backend at `http://localhost:8000` (start it with the command in `backend/README.md`). To use the deployed backend instead, create `frontend/.env.local` containing:
+Open http://localhost:5173. The app calls `/api/...` on its own address and the dev server forwards those requests to the backend, by default at `http://localhost:8000` (start it with the command in `backend/README.md`). To use the deployed backend instead, create `frontend/.env.local` containing:
 
 ```
-VITE_API_URL=https://enebaproject-ggfy.onrender.com
+API_PROXY_TARGET=https://enebaproject-ggfy.onrender.com
 ```
 
 Other commands: `npm run build` (type-check and build into `dist/`), `npm run lint`.
@@ -35,8 +35,12 @@ Other commands: `npm run build` (type-check and build into `dist/`), `npm run li
 
 1. In the Vercel dashboard: **Add New > Project**, import this repository.
 2. Set **Root Directory** to `frontend`. Vercel detects Vite and fills in the build settings.
-3. Under **Environment Variables**, add `VITE_API_URL` = `https://enebaproject-ggfy.onrender.com`.
-4. Click **Deploy**.
-5. On Render, add the new Vercel address to the backend's `FRONTEND_ORIGINS` variable (comma-separated, no trailing slash). Without this the browser blocks the frontend's requests.
+3. Click **Deploy**. No environment variables are needed.
 
-`vercel.json` sends every address to `index.html`, so reloading a page such as `/product/...` works instead of giving a 404. Every push to `master` redeploys.
+`vercel.json` does three things:
+
+- forwards `/api/...` to the backend on Render, so the browser sees the API as part of this site and the sign-in cookie works (the backend address is written in that file);
+- sends every other address to `index.html`, so reloading a page such as `/product/...` works instead of giving a 404;
+- adds security headers, including a Content Security Policy.
+
+Every push to `master` redeploys.

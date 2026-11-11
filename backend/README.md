@@ -39,7 +39,7 @@ Every push to the chosen branch redeploys. On the free plan the service sleeps a
 
 ## CORS
 
-Browsers only let a web page read answers from an API on another address if the API names that page's origin as allowed. The API allows exactly the origins listed in `FRONTEND_ORIGINS` and no others. This is enforced by browsers; it does not block non-browser tools, so private data is protected by sign-in tokens, not by CORS.
+Browsers only let a web page read answers from an API on another address if the API names that page's origin as allowed. The API allows exactly the origins listed in `FRONTEND_ORIGINS` and no others. This is enforced by browsers; it does not block non-browser tools, so private data is protected by the sign-in session, not by CORS. Since the deployed frontend reaches the API through Vercel's forwarding, its requests are same-site and do not depend on this list; the list decides what other origins may do, which is nothing.
 
 ## Layout
 
@@ -51,7 +51,7 @@ Browsers only let a web page read answers from an API on another address if the 
 | `src/ApiError.php` | An error with an HTTP status and a message for the user. |
 | `src/Config.php` | Reads settings from environment variables or `backend/.env`. |
 | `src/Database.php` | Opens the database connection and runs queries. |
-| `src/Auth.php` | Creates and checks sign-in tokens. |
+| `src/Auth.php` | Creates and checks the sign-in session cookie. |
 | `src/Catalog.php` | Queries shared by several controllers: product cards and cart lines. |
 | `src/Controllers/` | One file per area: home, products, auth, cart, orders. |
 
@@ -68,8 +68,9 @@ All responses are JSON. Prices are whole numbers of euro cents (`1999` = €19.9
 | GET | `/api/products` | no | Store list with search, filters, sorting and paging. |
 | GET | `/api/products/filters` | no | Values for the filter panel: platforms, regions, price range. |
 | GET | `/api/products/{slug}` | no | One product with every seller's offer. |
-| POST | `/api/auth/register` | no | Create an account. Returns a token. |
-| POST | `/api/auth/login` | no | Sign in. Returns a token. |
+| POST | `/api/auth/register` | no | Create an account and sign in. |
+| POST | `/api/auth/login` | no | Sign in. |
+| POST | `/api/auth/logout` | no | Sign out. |
 | GET | `/api/auth/me` | yes | The signed-in user. |
 | POST | `/api/cart/quote` | no | Current prices and stock for the cart's items. |
 | POST | `/api/orders` | yes | Checkout: creates a paid order and returns the keys. |
@@ -88,13 +89,11 @@ All responses are JSON. Prices are whole numbers of euro cents (`1999` = €19.9
 
 ### Signing in
 
-`register` and `login` return `{"token": "...", "user": {...}}`. Send the token on protected requests in a header:
+`register` and `login` return `{"user": {...}}` and set a cookie named `session`. The cookie holds a signed token (JWT) valid for 7 days and is marked `HttpOnly`, so page scripts cannot read it; the browser sends it back automatically on later requests. `logout` deletes it.
 
-```
-Authorization: Bearer <token>
-```
+Cookies only work when the browser sees the API as part of the same site. The deployed frontend therefore calls `/api/...` on its own address and Vercel forwards those requests here (see `frontend/vercel.json`); during development Vite does the same.
 
-Tokens are valid for 7 days.
+All POST requests must have `Content-Type: application/json`, otherwise the API answers 415.
 
 ### Request bodies
 
@@ -118,7 +117,8 @@ Every error has the same shape, with a matching HTTP status:
 | Status | Meaning |
 |---|---|
 | 400 | The request body is not valid JSON. |
-| 401 | Not signed in, or the token is invalid or expired. |
+| 401 | Not signed in, or the session is invalid or expired. |
+| 415 | A POST request was not sent as JSON. |
 | 404 | No such address, product or order. |
 | 409 | Conflict: email already registered, not enough keys, price changed. |
 | 422 | Input failed validation; `fields` says which. |

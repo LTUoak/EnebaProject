@@ -1007,3 +1007,44 @@ I found nothing that needs fixing before continuing, so I committed and pushed.
 **Commit:** "Add homepage: banner, best sellers and deals blocks", pushed to `origin/master` after the secrets check. Vercel should show the new homepage at https://eneba-project-six.vercel.app within a minute or two.
 
 ---
+
+## User
+
+Try to find official images for the placeholder coverarts, or atleast any cover art that fits the game. 
+
+That it loads slower I think is just a drawback of our project's free requirements, so if there is no way to optimize it, I do not think it should be as prioritised.
+
+A readme is a must, so create one explaining the things that matter. I think the limitations should be mention as well as the fact this whole website is based of Eneba. The way we created everything should also be mentioned, but do not write any secret data such as .env's.
+
+For the store name, the assignment is: "Please implement a marketplace web application in Eneba's style that matches eneba.com 
+website, with the following parts: ". I think that means we can change it to Eneba and try to tweak all the details to make it as close as possible to the actual site, as it will be just a demonstration.
+
+That there is no limit for the amount of the times the password can be guessed is a thing to remember, but I think we should prioritize security and figure something out for the token that's kept locally. I think security and functionability should be the priority.
+
+That the search doesn't understand abbreviations is fine, since it already considers mispellings and that should be enough. All these little bad details should be left for later if we still have time.
+
+If the old deploy/render is useless and not necessary for our future or this project's presentation, I allow you to delete or do what seems right with it.
+
+## Assistant
+
+(This turn was cut off by the session's usage limit before a final reply; the notes below are what was said.)
+
+All 24 Steam covers are verified as official art. Now finding images for the two Nintendo games, then wiring images in and moving to the token security change.
+
+Artwork is in the database. Now changing sign-in so the token lives in a cookie that page scripts cannot read, instead of in browser storage.
+
+Most of the cookie change is in; three multi-line edits didn't apply, so I'm making those directly.
+
+Frontend now calls the API through a same-site proxy. Starting both servers locally to test the cookie sign-in flow and take a screenshot with the real artwork.
+
+---
+
+## User
+
+the limit might have interrupted your actions so make sure everything i asked you to do just before was completed
+
+## Assistant
+
+(Progress note mid-turn) Everything from before the interruption is intact on disk. Remaining: update the CI test for cookie sign-in, write the README, update the docs, delete the old branch, then commit, push and verify live.
+
+---

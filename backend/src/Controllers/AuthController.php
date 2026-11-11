@@ -8,12 +8,12 @@ use App\Auth;
 use App\Database;
 use App\Http;
 
-/** Sign-up, sign-in and "who am I". */
+/** Sign-up, sign-in, sign-out and "who am I". The session travels in an HttpOnly cookie (see Auth). */
 final class AuthController
 {
     private const MIN_PASSWORD_LENGTH = 8;
 
-    /** POST /api/auth/register — body: {email, password, display_name}. Returns {token, user}. */
+    /** POST /api/auth/register — body: {email, password, display_name}. Signs the new user in and returns {user}. */
     public static function register(): array
     {
         $body     = Http::body();
@@ -53,10 +53,11 @@ final class AuthController
             throw $e;
         }
 
-        Http::send(['token' => Auth::issueToken($user), 'user' => Auth::publicUser($user)], 201);
+        Auth::startSession($user);
+        Http::send(['user' => Auth::publicUser($user)], 201);
     }
 
-    /** POST /api/auth/login — body: {email, password}. Returns {token, user}. */
+    /** POST /api/auth/login — body: {email, password}. Sets the session cookie and returns {user}. */
     public static function login(): array
     {
         $body     = Http::body();
@@ -74,10 +75,18 @@ final class AuthController
             throw new ApiError(401, 'Incorrect email or password.');
         }
 
-        return ['token' => Auth::issueToken($user), 'user' => Auth::publicUser($user)];
+        Auth::startSession($user);
+        return ['user' => Auth::publicUser($user)];
     }
 
-    /** GET /api/auth/me — the signed-in user. Lets the frontend check a saved token on page load. */
+    /** POST /api/auth/logout — deletes the session cookie. */
+    public static function logout(): array
+    {
+        Auth::endSession();
+        return ['signed_out' => true];
+    }
+
+    /** GET /api/auth/me — the signed-in user. Lets the frontend find out on page load whether someone is signed in. */
     public static function me(): array
     {
         return ['user' => Auth::requireUser()];

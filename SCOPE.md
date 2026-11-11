@@ -62,7 +62,10 @@ Stack: React + TypeScript frontend, PHP backend, PostgreSQL on Neon, deployed on
 | 2026-11-11 | Demo account password kept in `backend/.env`, not in the repository | Technical: the repository is pushed to GitHub, so no working password should be committed. |
 | 2026-11-11 | API written in plain PHP with a small router, no framework | Time: about 14 endpoints do not need one, and less code to learn means every line can be explained; it also needs no extra install step on Render. |
 | 2026-11-11 | REST-style JSON API with one endpoint per homepage block | Assignment: each homepage block must load from its own backend source. |
-| 2026-11-11 | Sign-in with signed tokens (JWT) sent in a header, not cookie sessions | Technical: frontend (Vercel) and backend (Render) are on different domains, where browsers restrict cookies; tokens also need no sessions table. |
+| 2026-11-11 | Sign-in with signed tokens (JWT), which need no sessions table | Technical: the token proves who the user is by its signature, so nothing has to be stored on the server. |
+| 2026-11-11 | The sign-in token is kept in an `HttpOnly` cookie, not in browser storage (replaces the first design, a token in `localStorage` sent in a header) | Technical: page scripts cannot read an `HttpOnly` cookie, so a malicious script cannot steal the sign-in. |
+| 2026-11-11 | The frontend calls the API through its own address; Vercel forwards `/api` to Render | Technical: browsers restrict cookies between different domains, and forwarding makes the API part of the same site. |
+| 2026-11-11 | POST requests must be JSON, and the cookie is `SameSite=Lax` | Technical: together these stop other websites from making requests in a signed-in visitor's name. |
 | 2026-11-11 | Checkout runs in one database transaction and always recalculates prices on the server | Technical: a key must never be delivered twice or without an order, and prices sent by a browser cannot be trusted. |
 | 2026-11-11 | Simulated payment always succeeds | Time: the assignment asks for a simulated checkout; a failure path would add screens without showing more. |
 | 2026-11-11 | Backend packaged as a Docker image (official PHP 8.4 + Apache) | Technical: Render has no built-in PHP support but runs any Dockerfile; Apache handles several requests at once, unlike PHP's built-in test server. |
@@ -72,5 +75,7 @@ Stack: React + TypeScript frontend, PHP backend, PostgreSQL on Neon, deployed on
 | 2026-11-11 | `react-router-dom` is the only added frontend package; cart and sign-in state use React's built-in tools | Time: fewer libraries to learn and explain; the app's shared state is small. |
 | 2026-11-11 | All backend calls go through one typed API client | Technical: the backend address, sign-in token and error handling live in one place instead of in every page. |
 | 2026-11-11 | Frontend deployed to Vercel before the pages are built | Time: proves the Vercel to Render to Neon chain early, when problems are cheap to find. |
-| 2026-11-11 | Store has its own name (KeyMarket), not Eneba's name or logo | Assignment: the task is to match Eneba's style, not to copy its trademark. |
-| 2026-11-11 | Placeholder images for covers and banners | Time: choosing and hosting real artwork is separate work; placeholders let every page be built first. |
+| 2026-11-11 | Store is named Eneba (first built under a placeholder name, KeyMarket), with a footer note that it is a student project and not the real store | Assignment: the task is to match eneba.com as closely as possible, and this is a demonstration only. |
+| 2026-11-11 | Official cover art linked from the publishers' image servers (mostly Steam), replacing the first placeholder images | Assignment: real covers are needed to resemble eneba.com; linking avoids copying copyrighted files into the repository. |
+| 2026-11-11 | The frontend retries failed reads for up to a minute | Technical: the free Render service sleeps when idle and takes that long to wake; this cannot be removed on the free plan. |
+| 2026-11-11 | No limit on sign-in attempts yet | Time: it needs storage for counting attempts; noted as a known limitation to revisit if time allows. |

@@ -22,6 +22,7 @@ const ORDER_HISTORY_DAYS     = 60;
 $users    = require __DIR__ . '/seeds/users.php';
 $products = require __DIR__ . '/seeds/products.php';
 $banners  = require __DIR__ . '/seeds/banners.php';
+$images   = require __DIR__ . '/seeds/images.php';
 
 $reset = in_array('--reset', $argv, true);
 $db    = connect();
@@ -98,7 +99,7 @@ try {
             $slug,
             $title,
             $product['about'],
-            'https://placehold.co/600x800/1f0a4d/ffffff?text=' . rawurlencode($product['game']),
+            $images['covers'][$product['game']] ?? null, // no artwork: the frontend shows a plain tile
             $product['platform'],
             $product['region'],
             $product['released'],
@@ -190,7 +191,9 @@ try {
             }
             $link = '/product/' . $slugs[$key];
         }
-        $insertBanner->execute([$banner['title'], $banner['subtitle'], $banner['image'], $link, $position + 1]);
+        $hero = $images['heroes'][$banner['hero']]
+            ?? throw new RuntimeException("Banner '{$banner['title']}' has no hero image in images.php");
+        $insertBanner->execute([$banner['title'], $banner['subtitle'], $hero, $link, $position + 1]);
     }
 
     $db->commit();

@@ -91,8 +91,8 @@ export interface User {
   display_name: string
 }
 
+/** The answer to sign-up and sign-in. The session itself arrives as a cookie the page cannot read. */
 export interface AuthResult {
-  token: string
   user: User
 }
 

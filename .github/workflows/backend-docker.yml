@@ -94,15 +94,26 @@ jobs:
           check "source files are not served"
 
           test "$(curl -s -o /dev/null -w '%{http_code}' "$API/api/orders")" -eq 401
-          check "order history refuses requests without a token"
-          TOKEN=$(curl -fsS -X POST "$API/api/auth/login" -H 'Content-Type: application/json' \
-            -d "{\"email\":\"demo@example.com\",\"password\":\"$CI_DEMO_PASSWORD\"}" | jq -r '.token')
-          curl -fsS "$API/api/orders" -H "Authorization: Bearer $TOKEN" | jq -e '.items | length > 0' > /dev/null
-          check "sign-in token reaches PHP through Apache"
+          check "order history refuses requests without a session"
+
+          # Sign in: the session arrives as a cookie (kept in a cookie jar file), not in the answer.
+          JAR=$(mktemp)
+          curl -fsS -c "$JAR" -D login-headers.txt -X POST "$API/api/auth/login" -H 'Content-Type: application/json' \
+            -d "{\"email\":\"demo@example.com\",\"password\":\"$CI_DEMO_PASSWORD\"}" | jq -e 'has("user") and (has("token") | not)' > /dev/null
+          check "sign-in answers with the user and no token"
+          grep -i '^set-cookie: session=' login-headers.txt | grep -i 'httponly' | grep -i 'samesite=lax' > /dev/null
+          check "session cookie is HttpOnly and SameSite=Lax"
+          curl -fsS -b "$JAR" "$API/api/orders" | jq -e '.items | length > 0' > /dev/null
+          check "session cookie signs the user in"
           OFFER=$(curl -fsS "$API/api/products/elden-ring-pc-steam-key-global" | jq '.product.offers[0].id')
-          curl -fsS -X POST "$API/api/orders" -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+          curl -fsS -b "$JAR" -X POST "$API/api/orders" -H 'Content-Type: application/json' \
             -d "{\"items\":[{\"offer_id\":$OFFER,\"quantity\":1}]}" | jq -e '.order.status == "paid" and (.order.items[0].keys | length == 1)' > /dev/null
           check "checkout delivers a key"
+          test "$(curl -s -o /dev/null -w '%{http_code}' -b "$JAR" -X POST "$API/api/orders" -d 'items=1')" -eq 415
+          check "POST requests that are not JSON are refused"
+          curl -fsS -b "$JAR" -c "$JAR" -X POST "$API/api/auth/logout" -H 'Content-Type: application/json' -d '{}' > /dev/null
+          test "$(curl -s -o /dev/null -w '%{http_code}' -b "$JAR" "$API/api/orders")" -eq 401
+          check "sign-out ends the session"
 
       - name: Test CORS
         run: |

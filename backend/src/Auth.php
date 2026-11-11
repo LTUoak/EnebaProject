@@ -4,19 +4,25 @@ declare(strict_types=1);
 namespace App;
 
 /**
- * Sign-in tokens.
+ * Sign-in sessions.
  *
- * After sign-in the API gives the browser a token: a small piece of text
- * saying "this is user 7, valid until <date>", plus a signature made with
- * APP_SECRET. The browser sends it back with every protected request.
+ * After sign-in the API creates a token: a small piece of text saying
+ * "this is user 7, valid until <date>", plus a signature made with APP_SECRET.
  * Nobody without APP_SECRET can produce a valid signature, so the API can
  * trust the token without storing anything. (The format is a standard JWT.)
+ *
+ * The token is given to the browser in a cookie marked HttpOnly, which means
+ * JavaScript on the page cannot read it. The browser itself sends the cookie
+ * back with every request. A malicious script that got onto the page therefore
+ * cannot steal the sign-in, which it could if the token sat in localStorage.
  */
 final class Auth
 {
+    private const COOKIE           = 'session';
     private const LIFETIME_SECONDS = 7 * 24 * 60 * 60; // 7 days
 
-    public static function issueToken(array $user): string
+    /** Signs the user in: sends the session cookie with this response. */
+    public static function startSession(array $user): void
     {
         $header  = self::encode(['alg' => 'HS256', 'typ' => 'JWT']);
         $payload = self::encode([
@@ -24,14 +30,20 @@ final class Auth
             'email' => $user['email'],
             'exp'   => time() + self::LIFETIME_SECONDS,
         ]);
-        return "$header.$payload." . self::sign("$header.$payload");
+        self::sendCookie("$header.$payload." . self::sign("$header.$payload"), time() + self::LIFETIME_SECONDS);
+    }
+
+    /** Signs the user out: tells the browser to delete the cookie. */
+    public static function endSession(): void
+    {
+        self::sendCookie('', time() - 3600);
     }
 
     /** The signed-in user for this request, or a 401 error. */
     public static function requireUser(): array
     {
-        $token  = Http::bearerToken();
-        $claims = $token !== null ? self::verify($token) : null;
+        $token  = $_COOKIE[self::COOKIE] ?? null;
+        $claims = is_string($token) ? self::verify($token) : null;
         if ($claims === null) {
             throw new ApiError(401, 'Please sign in to continue.');
         }
@@ -55,6 +67,24 @@ final class Auth
             'email'        => $user['email'],
             'display_name' => $user['display_name'],
         ];
+    }
+
+    private static function sendCookie(string $value, int $expires): void
+    {
+        setcookie(self::COOKIE, $value, [
+            'expires'  => $expires,
+            'path'     => '/',
+            'httponly' => true,            // JavaScript cannot read it
+            'secure'   => self::isHttps(), // only sent over HTTPS (off for local http testing)
+            'samesite' => 'Lax',           // not sent with requests that other websites make
+        ]);
+    }
+
+    /** True when the visitor used HTTPS; behind Render's and Vercel's proxies that is reported in a header. */
+    private static function isHttps(): bool
+    {
+        return ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https'
+            || (($_SERVER['HTTPS'] ?? 'off') !== 'off');
     }
 
     /** Returns the token's contents if the signature is right and it has not expired. */

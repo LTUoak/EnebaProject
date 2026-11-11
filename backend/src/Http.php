@@ -11,6 +11,8 @@ final class Http
     {
         http_response_code($status);
         header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-store');            // never keep API answers in a shared cache
+        header('X-Content-Type-Options: nosniff');
         echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;
     }
@@ -22,7 +24,9 @@ final class Http
      * "https://my-app.vercel.app,http://localhost:5173".
      *
      * This is a rule browsers enforce to protect users. It does not stop
-     * non-browser tools from calling the API; sign-in tokens protect private data.
+     * non-browser tools from calling the API; the sign-in session protects private data.
+     * The deployed frontend reaches the API through its own address (a proxy),
+     * so CORS mainly matters for other origins, which get no permission.
      */
     public static function cors(): void
     {
@@ -37,7 +41,7 @@ final class Http
             header("Access-Control-Allow-Origin: $origin");
             header('Vary: Origin');
             header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-            header('Access-Control-Allow-Headers: Content-Type, Authorization');
+            header('Access-Control-Allow-Headers: Content-Type');
             header('Access-Control-Max-Age: 86400');
         }
 
@@ -86,13 +90,19 @@ final class Http
         return array_slice(array_values(array_unique($items)), 0, 20);
     }
 
-    /** The token from the "Authorization: Bearer <token>" header, or null. */
-    public static function bearerToken(): ?string
+    /**
+     * POST requests must be sent as JSON. Besides keeping input handling simple,
+     * this blocks a classic attack: another website cannot make a visitor's
+     * browser send a JSON request with their cookie (forms cannot send JSON).
+     */
+    public static function requireJsonForPost(): void
     {
-        $header = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
-        if ($header === '' && function_exists('getallheaders')) {
-            $header = array_change_key_case(getallheaders())['authorization'] ?? '';
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            return;
         }
-        return preg_match('/^Bearer\s+(\S+)$/i', $header, $match) ? $match[1] : null;
+        $type = strtolower(trim(explode(';', $_SERVER['CONTENT_TYPE'] ?? '')[0]));
+        if ($type !== 'application/json') {
+            throw new ApiError(415, 'Send POST requests with Content-Type: application/json.');
+        }
     }
 }

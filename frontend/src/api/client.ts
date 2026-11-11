@@ -15,18 +15,18 @@ import type {
   User,
 } from './types'
 
-// Where the backend lives. Set VITE_API_URL per environment (see .env.example);
-// without it the app expects the backend running locally.
-const API_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/+$/, '')
+// Requests go to "/api/..." on the site's own address. A proxy forwards them to
+// the backend: Vercel in production (vercel.json), Vite during development
+// (vite.config.ts). Because of that the browser treats the API as part of this
+// site, and the sign-in session can live in an HttpOnly cookie that JavaScript
+// (including any malicious script) cannot read. This file never sees the session.
 
-const TOKEN_KEY = 'auth_token'
+// The free backend sleeps when idle and needs up to a minute to wake. While it
+// wakes, the proxy answers with a gateway error, so reads are retried for a while.
+const RETRY_STATUSES = [502, 503, 504]
+const RETRY_DELAYS_MS = [2000, 4000, 8000, 12000, 15000, 15000]
 
-/** The sign-in token, kept in the browser so a page reload stays signed in. */
-export const tokenStore = {
-  get: (): string | null => localStorage.getItem(TOKEN_KEY),
-  set: (token: string): void => localStorage.setItem(TOKEN_KEY, token),
-  clear: (): void => localStorage.removeItem(TOKEN_KEY),
-}
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /**
  * Any failed request. `status` is the HTTP status (0 = the server could not be
@@ -46,23 +46,24 @@ export class ApiError extends Error {
 }
 
 async function request<T>(method: 'GET' | 'POST', path: string, body?: unknown): Promise<T> {
-  const headers: Record<string, string> = {}
-  if (body !== undefined) {
-    headers['Content-Type'] = 'application/json'
-  }
-  const token = tokenStore.get()
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`
-  }
+  const init: RequestInit =
+    method === 'POST'
+      ? { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body ?? {}) }
+      : { method }
 
-  let response: Response
-  try {
-    response = await fetch(API_URL + path, {
-      method,
-      headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
-    })
-  } catch {
+  let response: Response | undefined
+  for (let attempt = 0; ; attempt++) {
+    try {
+      response = await fetch(path, init)
+    } catch {
+      response = undefined
+    }
+    // Only reads are retried. Repeating a POST could, for example, place an order twice.
+    const failedToConnect = response === undefined || RETRY_STATUSES.includes(response.status)
+    if (method !== 'GET' || !failedToConnect || attempt >= RETRY_DELAYS_MS.length) break
+    await sleep(RETRY_DELAYS_MS[attempt])
+  }
+  if (response === undefined) {
     throw new ApiError(0, 'Could not reach the server. Please check your connection and try again.')
   }
 
@@ -110,6 +111,7 @@ export const api = {
   register: (input: { email: string; password: string; display_name: string }) =>
     request<AuthResult>('POST', '/api/auth/register', input),
   login: (input: { email: string; password: string }) => request<AuthResult>('POST', '/api/auth/login', input),
+  logout: () => request<{ signed_out: boolean }>('POST', '/api/auth/logout'),
   me: () => request<{ user: User }>('GET', '/api/auth/me').then((r) => r.user),
 
   // Cart and orders
