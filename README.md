@@ -18,8 +18,8 @@ The backend runs on a free plan that sleeps when idle, so the first page load af
 | Homepage built from separate blocks (deals banner, categories, best sellers, top deals) | Done |
 | Store page: search with typo tolerance, filters, sorting, paging | Done |
 | Product page with offers from several sellers | Done |
-| Cart and simulated checkout that delivers a key | API done, page in progress |
-| Sign-up, sign-in, protected checkout and order history | API done, page in progress |
+| Cart and simulated checkout that delivers a key | Done |
+| Sign-up, sign-in, protected checkout and order history | Done |
 
 ## How it is built
 

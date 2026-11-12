@@ -39,13 +39,19 @@ final class Auth
         self::sendCookie('', time() - 3600);
     }
 
-    /** The signed-in user for this request, or a 401 error. */
+    /** The signed-in user for this request, or a 401 error. Used by protected endpoints. */
     public static function requireUser(): array
+    {
+        return self::currentUser() ?? throw new ApiError(401, 'Please sign in to continue.');
+    }
+
+    /** The signed-in user for this request, or null if nobody is signed in. */
+    public static function currentUser(): ?array
     {
         $token  = $_COOKIE[self::COOKIE] ?? null;
         $claims = is_string($token) ? self::verify($token) : null;
         if ($claims === null) {
-            throw new ApiError(401, 'Please sign in to continue.');
+            return null;
         }
 
         // The account must still exist and still be the same one.
@@ -53,10 +59,7 @@ final class Auth
             'SELECT id, email, display_name FROM users WHERE id = :id AND lower(email) = lower(:email)',
             [':id' => $claims['sub'], ':email' => $claims['email']]
         );
-        if ($user === null) {
-            throw new ApiError(401, 'Please sign in to continue.');
-        }
-        return self::publicUser($user);
+        return $user === null ? null : self::publicUser($user);
     }
 
     /** The user fields that are safe to send to the browser (never the password hash). */

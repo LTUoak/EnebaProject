@@ -86,9 +86,13 @@ final class AuthController
         return ['signed_out' => true];
     }
 
-    /** GET /api/auth/me — the signed-in user. Lets the frontend find out on page load whether someone is signed in. */
+    /**
+     * GET /api/auth/me — {user: {...}} when signed in, {user: null} when not.
+     * The frontend asks this on every page load, so "nobody is signed in" is a
+     * normal answer here and not an error.
+     */
     public static function me(): array
     {
-        return ['user' => Auth::requireUser()];
+        return ['user' => Auth::currentUser()];
     }
 }

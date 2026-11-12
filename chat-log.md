@@ -1134,4 +1134,24 @@ Screenshots are taken; reviewing them now.
 
 All three pages look right in the screenshots. Committing this first batch now, then continuing with cart, sign-in, checkout and order history.
 
+First batch is committed and pushed (`83823f7`). Now building the buying flow: sign-in, cart, checkout and order history.
+
+(The turn was cut off by the session's usage limit at this point, after the buying-flow pages were written and built but before they were tested or committed.)
+
+---
+
+## User
+
+It seems the limit was reached again, make sure all the things i asked you to do were actually done
+
+## Assistant
+
+(Progress notes mid-turn) Batch 1 is safely pushed; batch 2 (sign-in, cart, checkout, order history) is written and builds but was not yet tested or committed. Running a real-browser test of the whole buying flow now.
+
+The test found two things: signed-out visitors cause a harmless but noisy "401" error in the browser console, and my test's checkbox step was too strict. Fixing the first properly and adjusting the second.
+
+All 18 checks pass, including sign-up, checkout with key delivery, and phone width. Reviewing two screenshots, then documenting and committing.
+
+Everything is built and documented; committing and pushing the buying flow now, then I'll verify it on the live site.
+
 ---

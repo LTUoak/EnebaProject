@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { useAuth } from '../lib/auth-context'
 import { useCart } from '../lib/cart-context'
 import { CartIcon, CloseIcon, SearchIcon, UserIcon } from './icons'
 import './Header.css'
@@ -36,9 +37,7 @@ export function Header() {
             <CartIcon />
             {cart.count > 0 && <span className="header-badge">{cart.count}</span>}
           </Link>
-          <Link to="/sign-in" className="header-icon" aria-label="Account">
-            <UserIcon />
-          </Link>
+          <AccountButton key={location.pathname} />
         </nav>
       </div>
 
@@ -52,6 +51,53 @@ export function Header() {
         />
       )}
     </header>
+  )
+}
+
+/** Signed out: a link to the sign-in page. Signed in: a small menu with order history and sign out. */
+function AccountButton() {
+  const { user, signOut } = useAuth()
+  const navigate = useNavigate()
+  const [open, setOpen] = useState(false)
+
+  if (!user) {
+    return (
+      <Link to="/sign-in" className="header-icon" aria-label="Sign in">
+        <UserIcon />
+      </Link>
+    )
+  }
+
+  return (
+    <div className="header-account">
+      <button
+        type="button"
+        className="header-icon header-icon-active"
+        aria-label="Account menu"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <UserIcon />
+      </button>
+      {open && (
+        <div className="header-menu">
+          <p>
+            Signed in as <strong>{user.display_name}</strong>
+          </p>
+          <Link to="/orders">Order history</Link>
+          <button
+            type="button"
+            onClick={async () => {
+              await signOut()
+              setOpen(false)
+              navigate('/')
+            }}
+          >
+            Sign out
+          </button>
+        </div>
+      )}
+    </div>
   )
 }
 

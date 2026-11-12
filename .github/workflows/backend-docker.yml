@@ -95,6 +95,8 @@ jobs:
 
           test "$(curl -s -o /dev/null -w '%{http_code}' "$API/api/orders")" -eq 401
           check "order history refuses requests without a session"
+          curl -fsS "$API/api/auth/me" | jq -e '.user == null' > /dev/null
+          check "who-am-I answers null when signed out"
 
           # Sign in: the session arrives as a cookie (kept in a cookie jar file), not in the answer.
           JAR=$(mktemp)

@@ -112,7 +112,7 @@ export const api = {
     request<AuthResult>('POST', '/api/auth/register', input),
   login: (input: { email: string; password: string }) => request<AuthResult>('POST', '/api/auth/login', input),
   logout: () => request<{ signed_out: boolean }>('POST', '/api/auth/logout'),
-  me: () => request<{ user: User }>('GET', '/api/auth/me').then((r) => r.user),
+  me: () => request<{ user: User | null }>('GET', '/api/auth/me').then((r) => r.user),
 
   // Cart and orders
   cartQuote: (items: CartItem[]) => request<CartQuote>('POST', '/api/cart/quote', { items }),

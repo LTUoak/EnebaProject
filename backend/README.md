@@ -71,7 +71,7 @@ All responses are JSON. Prices are whole numbers of euro cents (`1999` = €19.9
 | POST | `/api/auth/register` | no | Create an account and sign in. |
 | POST | `/api/auth/login` | no | Sign in. |
 | POST | `/api/auth/logout` | no | Sign out. |
-| GET | `/api/auth/me` | yes | The signed-in user. |
+| GET | `/api/auth/me` | no | The signed-in user, or `null` when nobody is signed in. |
 | POST | `/api/cart/quote` | no | Current prices and stock for the cart's items. |
 | POST | `/api/orders` | yes | Checkout: creates a paid order and returns the keys. |
 | GET | `/api/orders` | yes | Order history with keys. |
