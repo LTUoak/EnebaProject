@@ -76,7 +76,7 @@ jobs:
           set -euo pipefail
           check() { echo "ok: $1"; }
 
-          test "$(curl -fsS "$API/api/home/banners" | jq '.items | length')" -eq 3
+          test "$(curl -fsS "$API/api/home/banners" | jq '.items | length')" -eq 4
           check "banners block"
           test "$(curl -fsS "$API/api/home/best-sellers" | jq '.items | length')" -eq 8
           check "best sellers block"

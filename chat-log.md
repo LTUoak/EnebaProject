@@ -1154,4 +1154,8 @@ All 18 checks pass, including sign-up, checkout with key delivery, and phone wid
 
 Everything is built and documented; committing and pushing the buying flow now, then I'll verify it on the live site.
 
+The live site passes the full browser test. The GitHub check reported a failure, so I'm looking at why.
+
+The check failed because of my own test, not the app: it still expected 3 homepage banners and there are now 4. Fixing that expectation.
+
 ---
