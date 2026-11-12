@@ -91,6 +91,19 @@ final class Http
     }
 
     /**
+     * The visitor's network address. Behind Render's and Vercel's proxies the
+     * real one is the first entry of X-Forwarded-For. A caller who talks to the
+     * backend directly can fake that header, so limits based on it are a
+     * second line of defence, never the only one.
+     */
+    public static function clientIp(): string
+    {
+        $forwarded = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '')[0]);
+        $ip        = filter_var($forwarded, FILTER_VALIDATE_IP) ?: ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
+        return substr($ip, 0, 45);
+    }
+
+    /**
      * POST requests must be sent as JSON. Besides keeping input handling simple,
      * this blocks a classic attack: another website cannot make a visitor's
      * browser send a JSON request with their cookie (forms cannot send JSON).

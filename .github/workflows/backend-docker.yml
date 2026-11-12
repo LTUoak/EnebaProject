@@ -117,6 +117,15 @@ jobs:
           test "$(curl -s -o /dev/null -w '%{http_code}' -b "$JAR" "$API/api/orders")" -eq 401
           check "sign-out ends the session"
 
+          # Password guessing: five failures are answered normally, the sixth is refused.
+          for i in 1 2 3 4 5; do
+            curl -s -o /dev/null -X POST "$API/api/auth/login" -H 'Content-Type: application/json' \
+              -d '{"email":"guess@example.com","password":"wrong-password"}'
+          done
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API/api/auth/login" -H 'Content-Type: application/json' \
+            -d '{"email":"guess@example.com","password":"wrong-password"}')" -eq 429
+          check "sign-in attempts are limited"
+
       - name: Test CORS
         run: |
           set -euo pipefail

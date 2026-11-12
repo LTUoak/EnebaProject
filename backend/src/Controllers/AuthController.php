@@ -13,6 +13,11 @@ final class AuthController
 {
     private const MIN_PASSWORD_LENGTH = 8;
 
+    // Sign-in attempt limits: counted over the last LOCK_MINUTES minutes.
+    private const LOCK_MINUTES           = 15;
+    private const MAX_FAILURES_PER_EMAIL = 5;
+    private const MAX_FAILURES_PER_IP    = 30;
+
     /** POST /api/auth/register — body: {email, password, display_name}. Signs the new user in and returns {user}. */
     public static function register(): array
     {
@@ -64,6 +69,24 @@ final class AuthController
         $email    = is_string($body['email'] ?? null) ? trim($body['email']) : '';
         $password = is_string($body['password'] ?? null) ? $body['password'] : '';
 
+        // Slow down password guessing: after too many recent failures for this
+        // email, or from this network address, refuse before even checking the
+        // password. The address limit is higher because many people can share one.
+        $emailKey = mb_substr(mb_strtolower($email), 0, 254);
+        $ip       = Http::clientIp();
+        $recent   = Database::one(
+            "SELECT count(*) FILTER (WHERE email = :email) AS by_email,
+                    count(*) FILTER (WHERE ip = :ip)       AS by_ip
+             FROM login_attempts
+             WHERE attempted_at > now() - interval '" . self::LOCK_MINUTES . " minutes'
+               AND (email = :email OR ip = :ip)",
+            [':email' => $emailKey, ':ip' => $ip]
+        );
+        if ($recent['by_email'] >= self::MAX_FAILURES_PER_EMAIL || $recent['by_ip'] >= self::MAX_FAILURES_PER_IP) {
+            header('Retry-After: ' . self::LOCK_MINUTES * 60);
+            throw new ApiError(429, 'Too many failed sign-in attempts. Please wait ' . self::LOCK_MINUTES . ' minutes and try again.');
+        }
+
         $user = Database::one(
             'SELECT id, email, display_name, password_hash FROM users WHERE lower(email) = lower(:email)',
             [':email' => $email]
@@ -72,9 +95,13 @@ final class AuthController
         // The same message for "no such account" and "wrong password", so the
         // API does not reveal which emails are registered.
         if ($user === null || !password_verify($password, $user['password_hash'])) {
+            Database::all('INSERT INTO login_attempts (email, ip) VALUES (:email, :ip)', [':email' => $emailKey, ':ip' => $ip]);
+            Database::all("DELETE FROM login_attempts WHERE attempted_at < now() - interval '1 day'"); // housekeeping
             throw new ApiError(401, 'Incorrect email or password.');
         }
 
+        // A correct password wipes this email's failures.
+        Database::all('DELETE FROM login_attempts WHERE email = :email', [':email' => $emailKey]);
         Auth::startSession($user);
         return ['user' => Auth::publicUser($user)];
     }

@@ -119,6 +119,7 @@ Every error has the same shape, with a matching HTTP status:
 | 400 | The request body is not valid JSON. |
 | 401 | Not signed in, or the session is invalid or expired. |
 | 415 | A POST request was not sent as JSON. |
+| 429 | Too many failed sign-in attempts; try again in 15 minutes. |
 | 404 | No such address, product or order. |
 | 409 | Conflict: email already registered, not enough keys, price changed. |
 | 422 | Input failed validation; `fields` says which. |

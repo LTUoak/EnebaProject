@@ -57,6 +57,7 @@ A **product** is one thing you can buy a key for, such as "Elden Ring (PC) Steam
 ## Security measures
 
 - Passwords are stored only as hashes (PHP `password_hash`).
+- Failed sign-ins are limited to 5 per email address (and 30 per network address) in 15 minutes, which slows password guessing.
 - The sign-in session is a signed token kept in an `HttpOnly` cookie, which page scripts cannot read. The frontend reaches the API through its own address so the cookie is first-party.
 - The session cookie is `SameSite=Lax` and the API accepts POST requests only as JSON, which blocks requests forged by other websites.
 - Prices and stock are always read from the database at checkout; nothing the browser sends about prices is trusted.
@@ -68,7 +69,6 @@ A **product** is one thing you can buy a key for, such as "Elden Ring (PC) Steam
 
 - **Slow first load:** the free Render service sleeps after 15 minutes without traffic.
 - **Payment is simulated** and always succeeds; there is no failed-payment path.
-- **No limit on sign-in attempts,** so password guessing is not slowed down.
 - **Search handles typos, not abbreviations:** "gta" does not find Grand Theft Auto V.
 - **No seller or admin screens:** sellers, offers and keys come from the seed data.
 - **No emails:** keys are shown on screen and in order history.

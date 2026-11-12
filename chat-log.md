@@ -1222,3 +1222,38 @@ The script is not in the repository, so this test does not run automatically. Ea
 What remains is polish: a visual pass on the smaller Eneba details above if you want them, and the limit on sign-in attempts if there is time.
 
 ---
+
+## User
+
+Everything seems to be in working shape, so I believe all that is left is details and other fixes. I know that there is no block for spamming wrong passwords, so it would be wise to implement that.
+
+
+ I also think the pages for the games themselves is slightly lacking, could you implement like its developer and languages. There should also be reviews for game itself on the game's offer. Implement a simple reviewing feature that allows you to rate the game's story, graphics, gameplay and audio and add some dummy reviews that show who reviewed it and at what date. Also add the ability to like someone elses review. You could also add profile pictures to the product sellers and give them a rating below their name so it would actually seem like a trusted seller. You should also add blocks that redirect to simillar games below the offer, for example from a shooter to a different one.
+
+A way to wishlist a game could also be a nice feature, add a way to do so on offers and make it so you are able to keep track of them through a heart icon next to the other ones in the top right. 
+
+I was also wrong about the search needing to be an icon, so if you could, make it a bar on the top middle.
+
+You could also make a a banner seperated into tabs, just below the search bar that allows you to easily go to other game categories, which could be acessed from the main page and offers alike.
+
+You should also make the icons for the games, deals and so on larger on the main page as they're small. Try to make everything use as much of the space it is given while still remaining proportionate.
+
+You could also add a button at the bottom of the main page that redirects you to all the game offers availabe
+
+All of these visuals can also be referenced from their site eneba.com.
+
+If you think any other features need improving, implement them.
+
+Describe everything you did in detail with proper reasoning.
+
+Make sure to continue appending the chat log.
+
+Prioritise security concerns over everything and try to do everything to a reasonable extent so that the usage is not exceeded.
+
+## Assistant
+
+(Progress notes mid-turn) Starting with the security item first: a limit on failed sign-in attempts. I'll commit that on its own, then do the data and API work for the new features, then the frontend.
+
+The sign-in limit works: the sixth wrong attempt for one email is refused for 15 minutes, and a correct sign-in clears the count. Committing this security fix now before the feature work.
+
+---
